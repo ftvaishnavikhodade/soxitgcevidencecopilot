@@ -171,11 +171,22 @@ def generate_sample_data():
         # 2. Generate HR Leavers CSV (10 rows)
         leavers_data = []
         for i in range(51, 61):
-            term_date = f"2023-{random.randint(1,12):02d}-{random.randint(1,28):02d}"
+            # Safe random ranges to avoid month end overflows
+            m = random.randint(1,12)
+            d = random.randint(1,20)
+            term_date = f"2023-{m:02d}-{d:02d}"
+            
+            # Make the first one a late leaver (> 24 hours)
+            if i == 51:
+                access_date = f"2023-{m:02d}-{d+5:02d}"
+            else:
+                access_date = term_date
+                
             leavers_data.append({
                 "employee_id": f"U{i:03d}",
                 "name": f"Terminated Employee {i}",
-                "termination_date": term_date
+                "termination_date": term_date,
+                "access_removed_date": access_date
             })
         df_leavers = pd.DataFrame(leavers_data)
         zip_file.writestr("sample_hr_leavers.csv", df_leavers.to_csv(index=False))
@@ -226,9 +237,19 @@ def get_sample_jml_csv():
         # 2. leavers.csv (Termination List)
         leavers_data = []
         for i in range(101, 111):
+            m = random.randint(7,12)
+            d = random.randint(1,20)
+            term_date = f"2023-{m:02d}-{d:02d}"
+            
+            if i == 101:
+                access_date = f"2023-{m:02d}-{d+3:02d}" # Late leaver
+            else:
+                access_date = term_date
+                
             leavers_data.append({
                 "user_id": f"U{i:03d}",
-                "termination_date": f"2023-{random.randint(7,12):02d}-15",
+                "termination_date": term_date,
+                "access_removed_date": access_date,
                 "active": "No"
             })
         df_leavers = pd.DataFrame(leavers_data)
