@@ -26,6 +26,19 @@ function hideWorkspaces() {
 function showDashboard() {
     hideAllViews();
     document.getElementById('view-dashboard').classList.remove('hidden');
+    
+    const breadcrumb = document.getElementById('top-breadcrumb');
+    if (breadcrumb) {
+        breadcrumb.classList.add('hidden');
+        breadcrumb.classList.remove('flex');
+    }
+    
+    const sidebarTitle = document.getElementById('sidebar-title');
+    if (sidebarTitle) sidebarTitle.innerText = "Global History";
+    
+    const newRunCont = document.getElementById('sidebar-new-run-container');
+    if (newRunCont) newRunCont.classList.add('hidden');
+    
     loadControls();
     loadDashboardRuns();
 }
@@ -218,6 +231,18 @@ async function openControl(id) {
     hideWorkspaces();
     document.getElementById('workspace-empty').classList.remove('hidden');
     
+    // UI specific to the workspace mode
+    const breadcrumb = document.getElementById('top-breadcrumb');
+    if (breadcrumb) {
+        breadcrumb.classList.add('flex');
+        breadcrumb.classList.remove('hidden');
+    }
+    const sidebarTitle = document.getElementById('sidebar-title');
+    if (sidebarTitle) sidebarTitle.innerText = `Control #${id} Runs`;
+    
+    const newRunCont = document.getElementById('sidebar-new-run-container');
+    if (newRunCont) newRunCont.classList.remove('hidden');
+    
     // Fetch details
     try {
         const res = await fetch(`/api/controls/${id}`);
@@ -233,33 +258,50 @@ async function openControl(id) {
 
 // API Interactions & Render Logic - Test Runs
 async function loadTestRuns(controlId) {
-    const list = document.getElementById('test-runs-list');
-    list.innerHTML = `<li class="text-sm text-gray-500">Loading runs...</li>`;
+    // Re-use the master sidebar list instead of a local card list
+    const list = document.getElementById('sidebar-runs-list');
+    list.innerHTML = `<div class="p-4 text-center text-slate-500">Loading runs for control...</div>`;
     
     try {
         const res = await fetch(`/api/test_runs/?control_id=${controlId}`);
         const data = await res.json();
         
         if (data.length === 0) {
-            list.innerHTML = `<li class="text-sm text-gray-500 italic">No runs yet.</li>`;
+            list.innerHTML = `<div class="p-8 text-center text-slate-400 font-medium italic">No test runs executed for this control yet.</div>`;
             return;
         }
         
         list.innerHTML = '';
         data.forEach(run => {
-            const statusColor = run.status === 'Analyzed' ? 'text-green-600' : 
-                               (run.status === 'Analyzing...' ? 'text-blue-600' : 
-                               (run.status === 'Error' ? 'text-red-600' : 'text-gray-500'));
+            let statusStyle = "bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400";
+            let icon = "fa-clock";
+
+            if (run.status === 'Analyzed') {
+                statusStyle = "bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400";
+                icon = "fa-check-double";
+            } else if (run.status === 'Error') {
+                statusStyle = "bg-rose-100 text-rose-700 dark:bg-rose-900/30 dark:text-rose-400";
+                icon = "fa-exclamation-triangle";
+            } else if (run.status === 'Analyzing...') {
+                statusStyle = "bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400 animate-pulse";
+                icon = "fa-sync fa-spin";
+            }
+
+            const dateObj = new Date(run.created_at);
+            const timestamp = isNaN(dateObj.getTime()) ? 'N/A' : dateObj.toLocaleString([], { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' });
             
-            const item = document.createElement('li');
+            const item = document.createElement('div');
+            item.className = "bg-white dark:bg-slate-900 rounded-xl border border-slate-200 dark:border-slate-800 shadow-sm hover:shadow-md hover:border-ui-accent transition-all";
             item.innerHTML = `
-                <div onclick="openRun(${run.id})" class="block p-3 border border-slate-200 dark:border-slate-700 rounded-lg hover:border-ui-accent hover:shadow-md cursor-pointer transition bg-white dark:bg-slate-800">
+                <div class="px-4 py-3 group cursor-pointer hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors" onclick="openRun(${run.id})">
                     <div class="flex justify-between items-center mb-1">
-                        <span class="font-bold text-sm text-ui-lightText dark:text-ui-darkText">Run #${run.id}</span>
-                        <span class="text-[10px] font-bold px-2 py-0.5 rounded ${statusColor} uppercase tracking-widest border border-current">${run.status}</span>
+                        <span class="font-bold text-xs text-ui-lightText dark:text-ui-darkText">Run #${run.id}</span>
+                        <span class="px-2 py-0.5 rounded-md text-[10px] font-bold ${statusStyle} uppercase tracking-wider border border-current opacity-90">${run.status}</span>
                     </div>
-                    <div class="text-[10px] font-bold text-slate-500 dark:text-slate-400 uppercase tracking-widest mt-1">
-                        Rating: ${run.rating || 'N/A'}
+                    <div class="flex items-center gap-2 text-[10px] text-slate-500 dark:text-slate-400 font-bold">
+                        <i class="fas ${icon}"></i>
+                        <span>Rating: ${run.rating ? run.rating.replace(/_/g, ' ') : 'Pending'}</span>
+                        <span class="ml-auto opacity-60">${timestamp}</span>
                     </div>
                 </div>
             `;
