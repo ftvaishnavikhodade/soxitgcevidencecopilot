@@ -156,7 +156,8 @@ function renderDashboardRuns() {
         }
 
         // Real formatted date
-        const dateObj = new Date(run.created_at);
+        const rawTs = run.created_at ? (run.created_at.endsWith('Z') ? run.created_at : run.created_at + 'Z') : null;
+        const dateObj = rawTs ? new Date(rawTs) : new Date(NaN);
         const timestamp = isNaN(dateObj.getTime()) ? 'N/A' : dateObj.toLocaleString('en-US', { timeZone: 'America/Chicago', month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit', hour12: false }) + ' CST';
 
         const renderItem = (isSidebar) => `
@@ -287,7 +288,8 @@ async function loadTestRuns(controlId) {
                 icon = "fa-sync fa-spin";
             }
 
-            const dateObj = new Date(run.created_at);
+            const rawTs = run.created_at ? (run.created_at.endsWith('Z') ? run.created_at : run.created_at + 'Z') : null;
+            const dateObj = rawTs ? new Date(rawTs) : new Date(NaN);
             const timestamp = isNaN(dateObj.getTime()) ? 'N/A' : dateObj.toLocaleString('en-US', { timeZone: 'America/Chicago', month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit', hour12: false }) + ' CST';
             
             const item = document.createElement('div');
