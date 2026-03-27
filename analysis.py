@@ -91,12 +91,16 @@ def analyze_evidence(run_id: int, control: dict, files: list) -> dict:
                     term_date_raw = row[term_col]
                     access_date_raw = row[acc_col]
                     
-                    if pd.isna(term_date_raw) or pd.isna(access_date_raw):
+                    if pd.isna(term_date_raw) or pd.isna(access_date_raw) or str(term_date_raw).strip() == "" or str(access_date_raw).strip() == "":
                         continue
                         
                     try:
-                        term_date = pd.to_datetime(term_date_raw)
-                        access_date = pd.to_datetime(access_date_raw)
+                        term_date = pd.to_datetime(term_date_raw, errors='coerce', utc=True)
+                        access_date = pd.to_datetime(access_date_raw, errors='coerce', utc=True)
+                        
+                        if pd.isna(term_date) or pd.isna(access_date):
+                            continue
+                            
                         diff = access_date - term_date
                         
                         if diff.total_seconds() > 86400: # 24 hours
@@ -137,7 +141,10 @@ def analyze_evidence(run_id: int, control: dict, files: list) -> dict:
             issues.append(exception_details)
         else:
             sufficiency = "likely_sufficient"
-            issues.append("No exceptions found in leaver timing SLA based on CSV analysis.")
+            if valid_timing_eval:
+                issues.append("No exceptions found in leaver timing SLA based on CSV analysis.")
+            else:
+                issues.append("No valid leaver timing columns (termination_date / access_removed_date) found in CSV analysis.")
         
         issues.append("Population looks complete, columns match expected headers.")
         
