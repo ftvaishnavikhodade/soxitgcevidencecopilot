@@ -59,7 +59,7 @@ async function loadControls() {
         const data = await res.json();
         
         if (data.length === 0) {
-            list.innerHTML = `<li class="p-8 text-center text-gray-500">No controls created yet.</li>`;
+            list.innerHTML = `<li class="p-8 text-center text-gray-500">No controls yet. Click <strong>New Procedure</strong> to create your first control.</li>`;
             return;
         }
         
@@ -134,7 +134,7 @@ function renderDashboardRuns() {
     if (sidebarList) sidebarList.innerHTML = '';
 
     if (runs.length === 0) {
-        const empty = '<li class="p-8 text-center text-slate-400 font-medium italic">No test runs executed yet.</li>';
+        const empty = '<li class="p-8 text-center text-slate-400 font-medium italic">No test runs yet.</li>';
         if (list) list.innerHTML = empty;
         if (sidebarList) sidebarList.innerHTML = empty;
         return;
