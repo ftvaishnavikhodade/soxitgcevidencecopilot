@@ -1,0 +1,6 @@
+venv/
+.venv/
+uploads/
+audit_copilot_v2.db
+__pycache__/
+*.pyc

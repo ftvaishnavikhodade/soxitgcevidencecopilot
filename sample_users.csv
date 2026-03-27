@@ -1,0 +1,6 @@
+employee_id,name,role,hire_date,status
+E001,Alice Smith,Developer,2023-01-15,Active
+E002,Bob Jones,Manager,2022-05-20,Active
+E003,Charlie Brown,Analyst,2023-03-10,Active
+E004,Diana Prince,Admin,2021-11-01,Terminated
+E005,Evan Wright,Developer,2023-08-01,Active
