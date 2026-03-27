@@ -157,7 +157,7 @@ function renderDashboardRuns() {
 
         // Real formatted date
         const dateObj = new Date(run.created_at);
-        const timestamp = isNaN(dateObj.getTime()) ? 'N/A' : dateObj.toLocaleString([], { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' });
+        const timestamp = isNaN(dateObj.getTime()) ? 'N/A' : dateObj.toLocaleString('en-US', { timeZone: 'America/Chicago', month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' }) + ' CT';
 
         const renderItem = (isSidebar) => `
             <div class="px-4 py-3 group cursor-pointer hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors" onclick="openControlAndRun(${run.control_id}, ${run.id})">
@@ -167,7 +167,7 @@ function renderDashboardRuns() {
                 </div>
                 <div class="flex items-center gap-2 text-[10px] text-slate-500 dark:text-slate-400 font-bold">
                     <i class="fas ${icon}"></i>
-                    <span>Rating: ${run.rating ? run.rating.replace(/_/g, ' ') : 'Pending'}</span>
+                    <span>Rating: ${run.rating ? run.rating.replace(/_/g, ' ').replace(/\b\w/g, c => c.toUpperCase()) : 'Pending'}</span>
                     <span class="ml-auto opacity-60">${timestamp}</span>
                 </div>
             </div>
@@ -288,7 +288,7 @@ async function loadTestRuns(controlId) {
             }
 
             const dateObj = new Date(run.created_at);
-            const timestamp = isNaN(dateObj.getTime()) ? 'N/A' : dateObj.toLocaleString([], { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' });
+            const timestamp = isNaN(dateObj.getTime()) ? 'N/A' : dateObj.toLocaleString('en-US', { timeZone: 'America/Chicago', month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' }) + ' CT';
             
             const item = document.createElement('div');
             item.className = "bg-white dark:bg-slate-900 rounded-xl border border-slate-200 dark:border-slate-800 shadow-sm hover:shadow-md hover:border-ui-accent transition-all";
@@ -300,7 +300,7 @@ async function loadTestRuns(controlId) {
                     </div>
                     <div class="flex items-center gap-2 text-[10px] text-slate-500 dark:text-slate-400 font-bold">
                         <i class="fas ${icon}"></i>
-                        <span>Rating: ${run.rating ? run.rating.replace(/_/g, ' ') : 'Pending'}</span>
+                        <span>Rating: ${run.rating ? run.rating.replace(/_/g, ' ').replace(/\b\w/g, c => c.toUpperCase()) : 'Pending'}</span>
                         <span class="ml-auto opacity-60">${timestamp}</span>
                     </div>
                 </div>
