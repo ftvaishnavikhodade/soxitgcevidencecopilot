@@ -277,6 +277,42 @@
                                         </div>
                                     </div>
                                     
+                                    <!-- Evidence Readiness & Testability -->
+                                    <div id="ar-trust-container" class="hidden animate-fade-in-up">
+                                        <div class="flex items-center gap-2 mb-4">
+                                            <i class="fas fa-shield-halved text-brand-600"></i>
+                                            <h4 class="text-sm font-bold text-slate-800 dark:text-slate-100 uppercase tracking-wide">Evidence Readiness & Testability</h4>
+                                            
+                                            <!-- Labels -->
+                                            <div class="ml-auto flex items-center gap-2">
+                                                <span id="ar-confidence-badge" class="px-2 py-1 text-[10px] uppercase font-bold rounded bg-slate-100 text-slate-500">Confidence: N/A</span>
+                                                <span id="ar-sufficiency-badge" class="px-2 py-1 text-[10px] uppercase font-bold rounded bg-slate-100 text-slate-500">Sufficiency: N/A</span>
+                                            </div>
+                                        </div>
+                                        <div class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-4 mb-8">
+                                            <!-- A. Uploaded -->
+                                            <div class="p-4 rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 shadow-sm">
+                                                <h5 class="text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-3">A. Evidence Uploaded</h5>
+                                                <div id="trust-uploaded-list" class="space-y-2 text-sm"></div>
+                                            </div>
+                                            <!-- B. Recognized -->
+                                            <div class="p-4 rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 shadow-sm">
+                                                <h5 class="text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-3">B. Evidence Recognized</h5>
+                                                <div id="trust-recognized-list" class="space-y-2 text-sm"></div>
+                                            </div>
+                                            <!-- C. Missing Evidence -->
+                                            <div class="p-4 rounded-xl border border-rose-100 dark:border-rose-900/30 bg-rose-50/30 dark:bg-rose-900/10 shadow-sm">
+                                                <h5 class="text-[10px] font-bold text-rose-400 uppercase tracking-wider mb-3">C. Missing Required Evidence</h5>
+                                                <div id="trust-missing-list" class="space-y-2 text-sm text-slate-600 dark:text-slate-400"></div>
+                                            </div>
+                                            <!-- D. Untestable Rules -->
+                                            <div class="p-4 rounded-xl border border-amber-100 dark:border-amber-900/30 bg-amber-50/30 dark:bg-amber-900/10 shadow-sm">
+                                                <h5 class="text-[10px] font-bold text-amber-500 uppercase tracking-wider mb-3">D. What Could Not Be Tested</h5>
+                                                <div id="trust-untestable-list" class="space-y-2 text-sm text-slate-600 dark:text-slate-400"></div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    
                                     <!-- Structured Checklist Table (IMPROVED) -->
                                     <div>
                                         <div class="flex items-center gap-2 mb-4">

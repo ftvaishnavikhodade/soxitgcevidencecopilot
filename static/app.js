@@ -510,12 +510,20 @@ function renderAnalysisResults(run) {
         document.getElementById('ar-issues').innerText = run.issues;
     }
 
-    // Checklist Table
+    // Checklist Table & Trust UI
     const tbody = document.getElementById('ar-checklist-body');
+    const trustContainerEl = document.getElementById('ar-trust-container');
     tbody.innerHTML = '';
+    
     if (run.checklist_json) {
         try {
-            const checklist = JSON.parse(run.checklist_json);
+            const parsedData = JSON.parse(run.checklist_json);
+            
+            // Backward compatibility with old flat checklist format vs new nested format
+            const isNested = parsedData.rules !== undefined;
+            const rulesData = isNested ? parsedData.rules : parsedData;
+            const trustData = isNested ? parsedData.trust : null;
+            
             const critLabels = {
                 "period_matches": "Period Matches",
                 "population_complete": "Population Complete",
@@ -523,59 +531,172 @@ function renderAnalysisResults(run) {
                 "timing_sla_met": "Timing SLA Met"
             };
             
-            for (const [key, val] of Object.entries(checklist)) { 
+            for (const [key, valData] of Object.entries(rulesData)) {
+                let statusRaw = typeof valData === 'string' ? valData : valData.status;
+                let reasonRaw = typeof valData === 'string' ? "Evaluation Complete." : valData.reason;
+                let exceptions = valData.exceptions || [];
+                
                 let badgeClass = "bg-slate-100 text-slate-600 dark:bg-slate-800 dark:text-slate-400";
                 let icon = '❓';
-                let stateText = val ? val.toUpperCase() : "UNKNOWN";
+                let stateText = statusRaw ? statusRaw.toUpperCase() : "UNKNOWN";
                 
-                if (val === 'pass') {
+                if (statusRaw === 'pass') {
                     badgeClass = "bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400";
                     icon = '✅';
-                } else if (val === 'fail') {
+                } else if (statusRaw === 'fail') {
                     badgeClass = "bg-rose-100 text-rose-700 dark:bg-rose-900/30 dark:text-rose-400";
                     icon = '❌';
-                } else if (val === 'unclear') {
+                } else if (statusRaw === 'unclear') {
                     badgeClass = "bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400";
                     icon = '❓';
+                } else if (statusRaw === 'not_testable') {
+                    badgeClass = "bg-slate-100 text-slate-500 dark:bg-slate-800 dark:text-slate-500";
+                    icon = '🚫';
+                    stateText = "NOT TESTABLE";
+                }
+                
+                let exceptionsHtml = "";
+                if (exceptions.length > 0) {
+                    exceptionsHtml = `<div class="mt-3 space-y-2">`;
+                    exceptions.forEach(ex => {
+                         exceptionsHtml += `
+                         <div class="px-3 py-2 bg-rose-50 dark:bg-rose-900/10 border border-rose-100 dark:border-rose-900/30 rounded-lg text-xs text-rose-700 dark:text-rose-400 font-medium flex flex-col gap-1">
+                            <div class="flex items-center justify-between opacity-70">
+                                <span><i class="fas fa-file-invoice text-[10px] mr-1"></i> ${ex.evidence}</span>
+                                <span><i class="fas fa-fingerprint text-[10px] mr-1"></i> ${ex.identity}</span>
+                            </div>
+                            <p>${ex.detail}</p>
+                         </div>`;
+                    });
+                    exceptionsHtml += `</div>`;
                 }
                 
                 const tr = document.createElement('tr');
-                tr.className = "hover:bg-slate-50/50 dark:hover:bg-slate-900/50 transition-colors";
+                tr.className = "hover:bg-slate-50/50 dark:hover:bg-slate-900/50 transition-colors border-b border-slate-100 dark:border-slate-800 last:border-0";
                 tr.innerHTML = `
-                    <td class="px-6 py-4 font-bold text-slate-700 dark:text-slate-200">${critLabels[key] || key}</td>
-                <td class="px-6 py-4 text-center">
+                    <td class="px-6 py-4 font-bold text-slate-700 dark:text-slate-200 align-top">${critLabels[key] || key}</td>
+                <td class="px-6 py-4 text-center align-top">
                     <span class="inline-flex items-center gap-1.5 px-3 py-1 text-[10px] font-bold rounded-full ${badgeClass} uppercase tracking-wider border border-current">
                         <span>${icon}</span>
                         <span>${stateText}</span>
                     </span>
                 </td>
-                <td class="px-6 py-4 text-slate-600 dark:text-slate-400">
-                    <span class="text-xs font-medium">Evaluation Complete: ${stateText} confirmed by engine.</span>
+                <td class="px-6 py-4 text-slate-600 dark:text-slate-400 align-top">
+                    <span class="text-xs font-semibold block">${reasonRaw}</span>
+                    ${exceptionsHtml}
                 </td>
                 `;
                 tbody.appendChild(tr);
             }
+            
+            // Render Trust UI if available
+            if (trustData && trustContainerEl && (run.status === 'Analyzed' || run.status === 'Error')) {
+                trustContainerEl.classList.remove('hidden');
+                
+                const confBadge = document.getElementById('ar-confidence-badge');
+                if (confBadge) confBadge.innerHTML = `Confidence: ${trustData.confidence_level || 'N/A'}`;
+                
+                const suffBadge = document.getElementById('ar-sufficiency-badge');
+                if (suffBadge) suffBadge.innerHTML = `Sufficiency: ${trustData.evidence_sufficiency || 'N/A'}`;
+                
+                // Mapped Missing Evidence
+                const missingEl = document.getElementById('trust-missing-list');
+                if (missingEl) {
+                    if (trustData.missing_evidence && trustData.missing_evidence.length > 0) {
+                        missingEl.innerHTML = trustData.missing_evidence.map(item => `
+                            <div class="flex items-center gap-2"><i class="fas fa-circle-xmark text-rose-500"></i> ${item}</div>
+                        `).join('');
+                    } else {
+                        missingEl.innerHTML = `<span class="italic opacity-80 pl-1">All expected evidence profiles located.</span>`;
+                    }
+                }
+                
+                // Untestable Rules
+                const untestableEl = document.getElementById('trust-untestable-list');
+                if (untestableEl) {
+                    if (trustData.untestable_rules && trustData.untestable_rules.length > 0) {
+                        untestableEl.innerHTML = trustData.untestable_rules.map(item => `
+                            <div class="flex items-start gap-2"><i class="fas fa-ban text-amber-500 mt-1 text-[10px]"></i> <span>${item}</span></div>
+                        `).join('');
+                    } else {
+                        untestableEl.innerHTML = `<span class="italic opacity-80 pl-1">No execution limitations identified.</span>`;
+                    }
+                }
+            } else if (trustContainerEl) {
+                // If still analyzing, or old format, hide trust elements.
+                trustContainerEl.classList.add('hidden');
+            }
+            
         } catch(e) {
             console.error("Failed to parse checklist JSON", e);
             tbody.innerHTML = `<tr><td colspan="3" class="px-4 py-4 text-center text-red-500">Error parsing checklist JSON</td></tr>`;
         }
     } else {
          tbody.innerHTML = `<tr><td colspan="3" class="px-4 py-4 text-center text-gray-500">No checklist data found</td></tr>`;
+         if (trustContainerEl) trustContainerEl.classList.add('hidden');
     }
     
-    // File Summaries
+    // File Summaries / Trust Uploaded & Recognized
     try {
          const filesArr = JSON.parse(run.summary || "[]");
          let htmlParts = [];
+         
+         const uploadedEl = document.getElementById('trust-uploaded-list');
+         const recognizedEl = document.getElementById('trust-recognized-list');
+         let upHtml = "";
+         let recHtml = "";
+         
          if (filesArr.length === 0) {
              htmlParts.push("No files analyzed.");
+             upHtml = "<div class='text-slate-500 italic'>No files uploaded</div>";
+             recHtml = "<div class='text-slate-500 italic'>No files mapped</div>";
          }
+         
          filesArr.forEach(f => {
+            // Original file summary array (legacy location)
             let cols = f.columns ? f.columns.slice(0,4).join(", ") : "";
             if (f.columns && f.columns.length > 4) cols += "...";
-            htmlParts.push(`<strong>${f.name}</strong><br>Summary: ${f.summary}<br>${f.rows ? `Rows: ${f.rows}` : ''} ${cols ? `<br>Columns: ${cols}` : ''}<br>Coverage: ${f.date_coverage || 'N/A'}`);
+            htmlParts.push(`<strong>${f.name}</strong><br>Summary: ${f.summary}<br>${f.rows ? `Rows: ${f.rows}` : ''} ${cols ? `<br>Columns: ${cols}` : ''}`);
+            
+            // New Trust Section: Uploaded
+            upHtml += `
+            <div class="flex items-center justify-between border-b border-slate-100 dark:border-slate-800 last:border-0 pb-2 mb-2">
+                <div class="truncate max-w-[200px]" title="${f.name}">
+                    <i class="fas fa-file text-slate-400 mr-2"></i><span class="font-medium text-slate-700 dark:text-slate-300">${f.name}</span>
+                </div>
+                <div class="flex items-center gap-3">
+                    ${f.rows !== undefined && f.rows !== null ? `<span class="text-xs text-slate-400 font-mono">${f.rows} rows</span>` : ''}
+                    <span class="px-2 py-0.5 rounded text-[9px] font-bold bg-slate-100 dark:bg-slate-800 text-slate-500">${f.type || 'FILE'}</span>
+                </div>
+            </div>`;
+            
+            // New Trust Section: Recognized
+            let rcType = f.recognized_type || "Unrecognized";
+            let mapStatus = f.mapping_status || "Not Recognized";
+            let mapCols = f.mapped_columns || [];
+            
+            let statusBadge = "bg-slate-100 text-slate-500";
+            let statusIcon = "fa-circle-question";
+            if (mapStatus === "Fully recognized") { statusBadge = "bg-emerald-100 text-emerald-700"; statusIcon = "fa-check-circle"; }
+            else if (mapStatus === "Partially recognized") { statusBadge = "bg-amber-100 text-amber-700"; statusIcon = "fa-circle-exclamation"; }
+            
+            recHtml += `
+            <div class="border-b border-slate-100 dark:border-slate-800 last:border-0 pb-3 mb-3">
+                <div class="flex items-center justify-between mb-2">
+                    <span class="font-bold text-xs text-brand-600 dark:text-brand-400"><i class="fas fa-tag mr-1 opacity-70"></i> ${rcType}</span>
+                    <span class="px-2 py-0.5 rounded text-[9px] font-bold uppercase ${statusBadge} flex items-center gap-1"><i class="fas ${statusIcon} text-[9px]"></i> ${mapStatus}</span>
+                </div>
+                ${mapCols.length > 0 ? `
+                <div class="text-[10px] text-slate-500 flex flex-wrap gap-1">
+                    ${mapCols.map(mc => `<span class="px-1.5 py-0.5 border border-slate-200 dark:border-slate-700 rounded bg-slate-50 dark:bg-slate-800">${mc}</span>`).join('')}
+                </div>` : `<span class="text-[10px] italic text-slate-400">No canonical columns mapped</span>` }
+            </div>`;
          });
+         
          document.getElementById('ar-summary').innerHTML = htmlParts.join('<br><hr class="my-2">');
+         if(uploadedEl) uploadedEl.innerHTML = upHtml;
+         if(recognizedEl) recognizedEl.innerHTML = recHtml;
+         
     } catch(e) {
          document.getElementById('ar-summary').innerHTML = run.summary || "No data.";
     }
