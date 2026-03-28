@@ -33,6 +33,24 @@ function upsertRunInCache(run) {
     saveRunsToCache(cache);
 }
 
+// Format a UTC datetime string from the DB into Chicago local time
+// Handles DST automatically: shows CDT (UTC-5) or CST (UTC-6) as appropriate
+function formatChicagoTimestamp(isoString) {
+    const raw = isoString ? (isoString.endsWith('Z') ? isoString : isoString + 'Z') : null;
+    const d = raw ? new Date(raw) : new Date(NaN);
+    if (isNaN(d.getTime())) return 'N/A';
+    const datePart = d.toLocaleString('en-US', {
+        timeZone: 'America/Chicago',
+        month: 'short', day: 'numeric',
+        hour: '2-digit', minute: '2-digit',
+        hour12: false
+    });
+    const tzAbbr = new Intl.DateTimeFormat('en-US', {
+        timeZone: 'America/Chicago', timeZoneName: 'short'
+    }).formatToParts(d).find(p => p.type === 'timeZoneName')?.value || 'CT';
+    return `${datePart} ${tzAbbr}`;
+}
+
 // Initialization
 document.addEventListener('DOMContentLoaded', () => {
     loadControls();
@@ -191,9 +209,7 @@ function renderDashboardRuns() {
         }
 
         // Real formatted date
-        const rawTs = run.created_at ? (run.created_at.endsWith('Z') ? run.created_at : run.created_at + 'Z') : null;
-        const dateObj = rawTs ? new Date(rawTs) : new Date(NaN);
-        const timestamp = isNaN(dateObj.getTime()) ? 'N/A' : dateObj.toLocaleString('en-US', { timeZone: 'America/Chicago', month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit', hour12: false }) + ' CST';
+        const timestamp = formatChicagoTimestamp(run.created_at);
 
         const renderItem = (isSidebar) => `
             <div class="px-4 py-3 group cursor-pointer hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors" onclick="openControlAndRun(${run.control_id}, ${run.id})">
@@ -323,9 +339,7 @@ async function loadTestRuns(controlId) {
                 icon = "fa-sync fa-spin";
             }
 
-            const rawTs = run.created_at ? (run.created_at.endsWith('Z') ? run.created_at : run.created_at + 'Z') : null;
-            const dateObj = rawTs ? new Date(rawTs) : new Date(NaN);
-            const timestamp = isNaN(dateObj.getTime()) ? 'N/A' : dateObj.toLocaleString('en-US', { timeZone: 'America/Chicago', month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit', hour12: false }) + ' CST';
+            const timestamp = formatChicagoTimestamp(run.created_at);
             
             const item = document.createElement('div');
             item.className = "bg-white dark:bg-slate-900 rounded-xl border border-slate-200 dark:border-slate-800 shadow-sm hover:shadow-md hover:border-ui-accent transition-all";
