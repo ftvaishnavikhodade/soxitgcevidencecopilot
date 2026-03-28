@@ -4,6 +4,35 @@ let currentRunId = null;
 let currentSortOrder = 'desc'; // 'asc' or 'desc'
 let allRunsGlobal = [];
 
+// --- localStorage Cache Helpers ---
+const RUNS_CACHE_KEY = 'sox_runs_cache';
+
+function getRunsFromCache() {
+    try { return JSON.parse(localStorage.getItem(RUNS_CACHE_KEY) || '[]'); }
+    catch { return []; }
+}
+
+function saveRunsToCache(runs) {
+    try { localStorage.setItem(RUNS_CACHE_KEY, JSON.stringify(runs)); }
+    catch (e) { console.warn('Cache write failed', e); }
+}
+
+function mergeRunsWithCache(serverRuns) {
+    const cache = getRunsFromCache();
+    const merged = {};
+    // Cache first (baseline), then server data wins (most up-to-date)
+    cache.forEach(r => { merged[r.id] = r; });
+    serverRuns.forEach(r => { merged[r.id] = r; });
+    return Object.values(merged).sort((a, b) => b.id - a.id);
+}
+
+function upsertRunInCache(run) {
+    const cache = getRunsFromCache();
+    const idx = cache.findIndex(r => r.id === run.id);
+    if (idx >= 0) cache[idx] = run; else cache.push(run);
+    saveRunsToCache(cache);
+}
+
 // Initialization
 document.addEventListener('DOMContentLoaded', () => {
     loadControls();
@@ -90,11 +119,17 @@ async function loadControls() {
 async function loadDashboardRuns() {
     try {
         const response = await fetch('/api/test_runs/');
-        const runs = await response.json();
-        allRunsGlobal = runs;
+        const serverRuns = await response.json();
+        // Merge server runs with locally cached runs so history survives cold starts
+        const merged = mergeRunsWithCache(serverRuns);
+        saveRunsToCache(merged);
+        allRunsGlobal = merged;
         renderDashboardRuns();
     } catch (e) {
-        console.error("Dashboard runs failed", e);
+        console.error('Dashboard runs failed', e);
+        // Fall back to cache on network/server error
+        allRunsGlobal = getRunsFromCache();
+        renderDashboardRuns();
     }
 }
 
@@ -350,6 +385,8 @@ async function handleCreateRun(e) {
             body: formData
         });
         const data = await res.json();
+        upsertRunInCache(data);          // persist new run immediately
+        await loadDashboardRuns();       // refresh global history
         loadTestRuns(currentControlId);
         openRun(data.id);
     } catch (ex) {
@@ -413,10 +450,10 @@ async function fetchAndRenderRunStatus(id) {
             
         } else if (run.status === 'Analyzed') {
             analyzeBtn.style.display = 'none';
-            
+            upsertRunInCache(run);       // cache the fully analyzed run
+            loadDashboardRuns();         // refresh global history with latest data
             // Re-fetch list to update rating string in sidebar
             loadTestRuns(currentControlId);
-            
             renderAnalysisResults(run);
         } else if (run.status === 'Error') {
              analyzeBtn.style.display = 'block';
