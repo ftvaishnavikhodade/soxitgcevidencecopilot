@@ -68,15 +68,37 @@ def analyze_evidence(run_id: int, control: dict, files: list) -> dict:
         "timing_sla_met": "pass"
     }
     
-    # Deterministic Dataframe Evaluation for Timings
+    # Deterministic Dataframe Evaluation for Timings and Approvals
     timing_sla_met = "unclear"
     exception_found = False
     exception_details = ""
+    valid_timing_eval = False
+    
+    has_approval_evidence = has_pdf
+    approval_exception_found = False
+    approval_exception_details = ""
     
     if has_csv:
-        valid_timing_eval = False
         for df in dataframes:
             cols = [str(c).lower().strip() for c in df.columns]
+            
+            # 1. Approval Evaluation
+            status_col_name = next((c for c in cols if "status" in c or "approv" in c), None)
+            if status_col_name:
+                has_approval_evidence = True
+                status_col = df.columns[cols.index(status_col_name)]
+                req_id_col_name = next((c for c in cols if "request" in c or "ticket" in c or "id" in c and "emp" not in c and "user" not in c), None)
+                req_id_col = df.columns[cols.index(req_id_col_name)] if req_id_col_name else None
+                
+                for _, row in df.iterrows():
+                    val = str(row[status_col]).lower().strip()
+                    if val in ["missing", "pending", "rejected", "unauthorized", "none", "nan", ""] or pd.isna(row[status_col]):
+                        approval_exception_found = True
+                        req_label = str(row[req_id_col]) if req_id_col else "A request"
+                        approval_exception_details = f"Exceptions noted in approval log: {req_label} is missing valid approval."
+                        break
+                        
+            # 2. Timing Evaluation
             if 'termination_date' in cols and 'access_removed_date' in cols:
                 valid_timing_eval = True
                 if timing_sla_met == "unclear":
@@ -84,15 +106,30 @@ def analyze_evidence(run_id: int, control: dict, files: list) -> dict:
                 
                 term_col = df.columns[cols.index('termination_date')]
                 acc_col = df.columns[cols.index('access_removed_date')]
-                emp_id_col = df.columns[cols.index('employee_id')] if 'employee_id' in cols else (df.columns[cols.index('emp_id')] if 'emp_id' in cols else None)
+                emp_id_col_name = next((c for c in cols if 'emp' in c and 'id' in c or 'user' in c and 'id' in c), None)
+                emp_id_col = df.columns[cols.index(emp_id_col_name)] if emp_id_col_name else None
                 name_col = df.columns[cols.index('name')] if 'name' in cols else None
                 
                 for _, row in df.iterrows():
                     term_date_raw = row[term_col]
                     access_date_raw = row[acc_col]
                     
-                    if pd.isna(term_date_raw) or pd.isna(access_date_raw) or str(term_date_raw).strip() == "" or str(access_date_raw).strip() == "":
+                    if pd.isna(term_date_raw) or str(term_date_raw).strip() == "":
                         continue
+                        
+                    emp_label = ""
+                    if emp_id_col: emp_label += str(row[emp_id_col])
+                    if name_col: 
+                        if emp_label: emp_label += f" / {row[name_col]}"
+                        else: emp_label += str(row[name_col])
+                    if not emp_label: emp_label = "An employee"
+                    
+                    # Missing access removal date when terminated -> FAIL
+                    if pd.isna(access_date_raw) or str(access_date_raw).strip() == "" or str(access_date_raw).strip().lower() == "nan":
+                        timing_sla_met = "fail"
+                        exception_found = True
+                        exception_details = f"1 leaver exception identified. {emp_label} was terminated on {term_date_raw} but access removal date is missing (potentially still active)."
+                        break
                         
                     try:
                         term_date = pd.to_datetime(term_date_raw, errors='coerce', utc=True)
@@ -106,47 +143,42 @@ def analyze_evidence(run_id: int, control: dict, files: list) -> dict:
                         if diff.total_seconds() > 86400: # 24 hours
                             timing_sla_met = "fail"
                             exception_found = True
-                            
-                            emp_label = ""
-                            if emp_id_col: emp_label += str(row[emp_id_col])
-                            if name_col: 
-                                if emp_label: emp_label += f" / {row[name_col]}"
-                                else: emp_label += str(row[name_col])
-                            if not emp_label: emp_label = "An employee"
-                            
                             exception_details = f"1 leaver exception identified. {emp_label} was terminated on {term_date_raw} and access was removed on {access_date_raw}, exceeding the 24-hour requirement."
                             break
                     except Exception:
                         pass
             
-            if exception_found:
-                break
-                
+            # Continue checking other dataframes in case one fails on approvals and another fails on timing
+            
         checklist["timing_sla_met"] = timing_sla_met
 
+    # Synthesize Issues and Conclusion
     if not has_csv:
         issues.append("Missing population / user listing file (CSV/Excel).")
         sufficiency = "likely_insufficient"
         checklist["population_complete"] = "fail"
     
-    if not has_pdf:
-        issues.append("Missing approval evidence file (PDF).")
+    if not has_approval_evidence:
+        issues.append("Missing approval evidence.")
         checklist["approvals_present"] = "fail"
-        if sufficiency != "likely_insufficient":
-            sufficiency = "unclear"
-            
-    if has_csv and has_pdf:
-        if exception_found:
-            sufficiency = "likely_insufficient"
-            issues.append(exception_details)
-        else:
-            sufficiency = "likely_sufficient"
-            if valid_timing_eval:
-                issues.append("No exceptions found in leaver timing SLA based on CSV analysis.")
-            else:
-                issues.append("No valid leaver timing columns (termination_date / access_removed_date) found in CSV analysis.")
+        sufficiency = "likely_insufficient"
+    elif approval_exception_found:
+        issues.append(approval_exception_details)
+        checklist["approvals_present"] = "fail"
+        sufficiency = "likely_insufficient"
         
-        issues.append("Population looks complete, columns match expected headers.")
+    if exception_found:
+        issues.append(exception_details)
+        sufficiency = "likely_insufficient"
+        
+    if has_csv and has_approval_evidence and not exception_found and not approval_exception_found:
+        sufficiency = "likely_sufficient"
+        
+    if valid_timing_eval and not exception_found:
+        issues.append("No exceptions found in leaver timing SLA based on CSV analysis.")
+    elif not valid_timing_eval and has_csv:
+        issues.append("No valid leaver timing columns (termination_date / access_removed_date) found in CSV analysis.")
+        checklist["timing_sla_met"] = "unclear"
         
     if not files:
          issues.append("No evidence provided to test the control.")
@@ -158,20 +190,25 @@ def analyze_evidence(run_id: int, control: dict, files: list) -> dict:
             "timing_sla_met": "unclear"
          }
 
+    # Prepare Workpaper Narrative
+    all_exceptions = []
+    if exception_found: all_exceptions.append(exception_details)
+    if approval_exception_found: all_exceptions.append(approval_exception_details)
+    exceptions_str = " ".join(all_exceptions)
+
     workpaper = f"""**Objective**
 To verify that logical access requests (JML) are appropriately authorized, provisioned in a timely manner, and deactivated promptly upon termination.
 
 **Procedures Performed**
-1. Obtained the population and matched against active directory.
-2. Selected a sample of requests and obtained approval tickets (PDFs).
-3. Vouched the approval string to ensure appropriate management authorization.
-4. Traced provisioning/deprovisioning dates against the HR effective date.
+1. Obtained the user population and termination listings.
+2. Verified the presence of approval evidence for access requests.
+3. Traced access removal dates against the HR termination dates to ensure logical access was revoked within the required SLA.
 
 **Conclusion**
 The control is evaluated as **{sufficiency.replace('_', ' ').title()}**. 
 {"Exceptions noted; follow-up required with IT owner." if sufficiency != "likely_sufficient" else "Test procedures executed without major exception."}
 
-{"**Exception Details:** " + exception_details if exception_found else ""}
+{"**Exception Details:** " + exceptions_str if exceptions_str else ""}
 """
 
     return {
