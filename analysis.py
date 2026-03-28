@@ -92,20 +92,23 @@ def analyze_evidence(run_id: int, control: dict, files: list) -> dict:
                 
                 for _, row in df.iterrows():
                     val = str(row[status_col]).lower().strip()
-                    if val in ["missing", "pending", "rejected", "unauthorized", "none", "nan", ""] or pd.isna(row[status_col]):
+                    if val in ["no", "false", "f", "missing", "pending", "rejected", "unauthorized", "none", "nan", ""] or pd.isna(row[status_col]):
                         approval_exception_found = True
                         req_label = str(row[req_id_col]) if req_id_col else "A request"
                         approval_exception_details = f"Exceptions noted in approval log: {req_label} is missing valid approval."
                         break
                         
             # 2. Timing Evaluation
-            if 'termination_date' in cols and 'access_removed_date' in cols:
+            term_col_name = next((c for c in cols if "term" in c and "date" in c), None)
+            acc_col_name = next((c for c in cols if "access" in c and "remov" in c and "date" in c), None)
+            
+            if term_col_name and acc_col_name:
                 valid_timing_eval = True
                 if timing_sla_met == "unclear":
                     timing_sla_met = "pass" # Start assuming pass if we have data to check
                 
-                term_col = df.columns[cols.index('termination_date')]
-                acc_col = df.columns[cols.index('access_removed_date')]
+                term_col = df.columns[cols.index(term_col_name)]
+                acc_col = df.columns[cols.index(acc_col_name)]
                 emp_id_col_name = next((c for c in cols if 'emp' in c and 'id' in c or 'user' in c and 'id' in c), None)
                 emp_id_col = df.columns[cols.index(emp_id_col_name)] if emp_id_col_name else None
                 name_col = df.columns[cols.index('name')] if 'name' in cols else None
@@ -177,7 +180,7 @@ def analyze_evidence(run_id: int, control: dict, files: list) -> dict:
     if valid_timing_eval and not exception_found:
         issues.append("No exceptions found in leaver timing SLA based on CSV analysis.")
     elif not valid_timing_eval and has_csv:
-        issues.append("No valid leaver timing columns (termination_date / access_removed_date) found in CSV analysis.")
+        issues.append("No valid leaver timing columns (e.g. term_date / access_removed_date) found in CSV analysis.")
         checklist["timing_sla_met"] = "unclear"
         
     if not files:
