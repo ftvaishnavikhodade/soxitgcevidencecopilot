@@ -1,0 +1,35 @@
+{
+  "files": [
+    {
+      "name": "test_charlie.csv",
+      "summary": "CSV with 1 rows.",
+      "rows": 1,
+      "columns": [
+        "employee_id",
+        "name",
+        "termination_date",
+        "access_removed_date"
+      ],
+      "date_coverage": "2023"
+    },
+    {
+      "name": "test_approval.pdf",
+      "summary": "PDF Approval. Preview: No text...",
+      "rows": 0,
+      "columns": [],
+      "date_coverage": "2023"
+    }
+  ],
+  "checklist": {
+    "period_matches": "pass",
+    "population_complete": "pass",
+    "approvals_present": "pass",
+    "timing_sla_met": "fail"
+  },
+  "sufficiency": "likely_insufficient",
+  "issues": [
+    "1 leaver exception identified. EMP005 / Charlie Wilson was terminated on 2024-12-15 and access was removed on 2024-12-20, exceeding the 24-hour requirement.",
+    "Population looks complete, columns match expected headers."
+  ],
+  "workpaper_text": "**Objective**\nTo verify that logical access requests (JML) are appropriately authorized, provisioned in a timely manner, and deactivated promptly upon termination.\n\n**Procedures Performed**\n1. Obtained the population and matched against active directory.\n2. Selected a sample of requests and obtained approval tickets (PDFs).\n3. Vouched the approval string to ensure appropriate management authorization.\n4. Traced provisioning/deprovisioning dates against the HR effective date.\n\n**Conclusion**\nThe control is evaluated as **Likely Insufficient**. \nExceptions noted; follow-up required with IT owner.\n\n**Exception Details:** 1 leaver exception identified. EMP005 / Charlie Wilson was terminated on 2024-12-15 and access was removed on 2024-12-20, exceeding the 24-hour requirement.\n"
+}

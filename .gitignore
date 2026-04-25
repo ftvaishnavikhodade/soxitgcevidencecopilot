@@ -1,9 +1,8 @@
 venv/
-.venv/
 __pycache__/
 *.pyc
 uploads/
 *.db
 .env
-
-.vercel
+.env.*
+.vercel/

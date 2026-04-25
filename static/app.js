@@ -99,14 +99,14 @@ function showCreateControl() {
 // API Interactions & Render Logic - Controls
 async function loadControls() {
     const list = document.getElementById('controls-list');
-    list.innerHTML = `<li class="p-4 text-center text-gray-500">Loading controls...</li>`;
+    list.innerHTML = `<li class="px-5 py-10 text-center"><p class="text-sm text-slate-400">Loading controls…</p></li>`;
     
     try {
         const res = await fetch('/api/controls/');
         const data = await res.json();
         
         if (data.length === 0) {
-            list.innerHTML = `<li class="p-8 text-center text-gray-500">No controls yet. Click <strong>New Procedure</strong> to create your first control.</li>`;
+            list.innerHTML = `<li class="px-5 py-10 text-center"><p class="text-sm text-slate-400">No controls configured.</p><p class="text-xs text-slate-400 mt-1">Click <strong class="text-slate-600 dark:text-slate-300">New Procedure</strong> to get started.</p></li>`;
             return;
         }
         
@@ -114,12 +114,12 @@ async function loadControls() {
         data.forEach(control => {
             const shortDesc = control.description.length > 100 ? control.description.substring(0, 100) + '...' : control.description;
             const item = document.createElement('li');
-            item.className = "hover:bg-slate-100 dark:hover:bg-slate-800 cursor-pointer transition border-b border-slate-100 dark:border-slate-800 last:border-0";
+            item.className = "hover:bg-slate-50 dark:hover:bg-slate-800/50 cursor-pointer transition";
             item.innerHTML = `
                 <div class="px-4 py-4 flex items-center justify-between" onclick="openControl(${control.id})">
                     <div>
-                        <p class="text-xs font-bold text-ui-lightText dark:text-ui-darkText uppercase tracking-wider">Control ID: ${control.id}</p>
-                        <p class="mt-1 text-sm text-slate-600 dark:text-slate-400 font-medium">${shortDesc}</p>
+                        <p class="text-xs font-semibold text-slate-700 dark:text-slate-200 uppercase tracking-wider">Control ID: ${control.id}</p>
+                        <p class="mt-0.5 text-sm text-slate-500 dark:text-slate-400">${shortDesc}</p>
                     </div>
                     <div class="ml-4 flex-shrink-0">
                         <i class="fas fa-chevron-right text-slate-400"></i>
@@ -130,7 +130,7 @@ async function loadControls() {
         });
     } catch (e) {
         console.error(e);
-        list.innerHTML = `<li class="p-4 text-center text-red-500">Failed to load controls. Is backend running?</li>`;
+        list.innerHTML = `<li class="px-5 py-10 text-center text-sm text-rose-500">Failed to load controls. Is the backend running?</li>`;
     }
 }
 
@@ -211,11 +211,18 @@ function renderDashboardRuns() {
         // Real formatted date
         const timestamp = formatChicagoTimestamp(run.created_at);
 
+        const displayName = run.name || `Run #${run.id}`;
+
         const renderItem = (isSidebar) => `
             <div class="px-4 py-3 group cursor-pointer hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors" onclick="openControlAndRun(${run.control_id}, ${run.id})">
                 <div class="flex justify-between items-center mb-1">
-                    <span class="font-bold text-xs text-ui-lightText dark:text-ui-darkText">Run #${run.id}</span>
-                    <span class="px-2 py-0.5 rounded-md text-[10px] font-bold ${statusStyle} uppercase tracking-wider border border-current opacity-90">${run.status}</span>
+                    <div class="flex items-center gap-1.5 min-w-0">
+                        <span class="font-bold text-xs text-ui-lightText dark:text-ui-darkText run-name-label truncate" data-run-id="${run.id}" ondblclick="startRenameRun(event, ${run.id})">${displayName}</span>
+                        <button onclick="event.stopPropagation(); startRenameFromIcon(${run.id}, this)" class="text-slate-400 hover:text-blue-500 transition-all flex-shrink-0 scale-110 active:scale-95 translate-y-[0px]" title="Rename run">
+                            <i class="fas fa-pen text-[12px] font-bold"></i>
+                        </button>
+                    </div>
+                    <span class="px-2 py-0.5 rounded-md text-[10px] font-bold ${statusStyle} uppercase tracking-wider border border-current opacity-90 flex-shrink-0">${run.status}</span>
                 </div>
                 <div class="flex items-center gap-2 text-[10px] text-slate-500 dark:text-slate-400 font-bold">
                     <i class="fas ${icon}"></i>
@@ -233,7 +240,7 @@ function renderDashboardRuns() {
 
         if (sidebarList) {
             const sidebarItem = document.createElement('div');
-            sidebarItem.className = "bg-white dark:bg-slate-900 rounded-xl border border-slate-200 dark:border-slate-800 shadow-sm hover:shadow-md hover:border-ui-accent transition-all";
+            sidebarItem.className = "run-card bg-white dark:bg-slate-900/80 rounded-xl shadow-sm";
             sidebarItem.innerHTML = renderItem(true);
             sidebarList.appendChild(sidebarItem);
         }
@@ -245,14 +252,105 @@ async function openControlAndRun(controlId, runId) {
     openRun(runId);
 }
 
+function startRenameFromIcon(runId, btn) {
+    const label = btn.closest('.flex').querySelector(`.run-name-label[data-run-id="${runId}"]`);
+    if (label) {
+        const fakeEvent = { stopPropagation: () => {}, preventDefault: () => {}, target: label };
+        startRenameRun(fakeEvent, runId);
+    }
+}
+
+function startRenameRun(event, runId) {
+    event.stopPropagation();
+    event.preventDefault();
+    const label = event.target;
+    const currentName = label.textContent.trim();
+
+    const input = document.createElement('input');
+    input.type = 'text';
+    input.value = currentName;
+    input.className = 'text-xs font-bold bg-white dark:bg-slate-800 border border-blue-400 rounded px-1.5 py-0.5 outline-none focus:ring-2 focus:ring-blue-400 w-full';
+    input.style.maxWidth = '160px';
+
+    input.addEventListener('keydown', (e) => {
+        if (e.key === 'Enter') { e.preventDefault(); input.blur(); }
+        if (e.key === 'Escape') { e.preventDefault(); label.textContent = currentName; label.style.display = ''; input.remove(); }
+    });
+
+    input.addEventListener('blur', () => saveRenameRun(runId, input, label, currentName));
+    input.addEventListener('click', (e) => e.stopPropagation());
+
+    label.style.display = 'none';
+    label.parentNode.insertBefore(input, label);
+    input.focus();
+    input.select();
+}
+
+async function saveRenameRun(runId, input, label, fallback) {
+    const newName = input.value.trim();
+    if (!newName || newName === fallback) {
+        label.style.display = '';
+        input.remove();
+        return;
+    }
+
+    let saved = false;
+    try {
+        const res = await fetch(`/api/test_runs/${runId}/rename`, {
+            method: 'PATCH',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ name: newName }),
+        });
+        if (res.ok) saved = true;
+    } catch (e) { console.warn('API rename failed, saving locally', e); }
+
+    // Always update locally (covers cache-only runs and server runs)
+    document.querySelectorAll(`.run-name-label[data-run-id="${runId}"]`).forEach(el => {
+        el.textContent = newName;
+    });
+    const cache = getRunsFromCache();
+    const idx = cache.findIndex(r => r.id === runId);
+    if (idx >= 0) { cache[idx].name = newName; saveRunsToCache(cache); }
+    allRunsGlobal = allRunsGlobal.map(r => r.id === runId ? { ...r, name: newName } : r);
+
+    label.style.display = '';
+    input.remove();
+}
+
 async function handleCreateControl(e) {
     e.preventDefault();
     const btn = document.getElementById('btn-create-control');
+    const desc = document.getElementById('control-desc').value.trim();
+    const proc = document.getElementById('control-proc').value.trim();
+    const errCont = document.getElementById('create-control-error');
+    const errText = document.getElementById('create-control-error-text');
+
+    const isWeak = (text) => {
+        if (!text) return true;
+        const lower = text.toLowerCase().trim();
+        const placeholders = ['test', 'testing', 'abc', 'xyz', 'n/a', 'na', 'sample', 'temp', '.', '-'];
+        if (placeholders.includes(lower)) return true;
+        const cleanText = text.replace(/[^a-zA-Z0-9 ]/g, '').trim();
+        if (cleanText.length < 10) return true;
+        const words = cleanText.split(/\s+/);
+        if (words.length < 3) return true;
+        return false;
+    };
+
+    if (isWeak(desc) || isWeak(proc)) {
+        errText.innerText = "Please provide a meaningful Control Description and Audit Test Procedure.";
+        if (errCont) {
+            errCont.classList.remove('hidden');
+            errCont.classList.add('flex');
+        }
+        return;
+    } else if (errCont) {
+        errCont.classList.add('hidden');
+        errCont.classList.remove('flex');
+    }
+
     btn.innerHTML = "Saving...";
     btn.disabled = true;
-
-    const desc = document.getElementById('control-desc').value;
-    const proc = document.getElementById('control-proc').value;
     
     const formData = new FormData();
     formData.append('description', desc);
@@ -269,7 +367,7 @@ async function handleCreateControl(e) {
         alert("Error creating control");
         console.error(e);
     } finally {
-        btn.innerHTML = "Save Control";
+        btn.innerHTML = "Save Procedure";
         btn.disabled = false;
     }
 }
@@ -372,19 +470,67 @@ function showCreateRun() {
 
 async function handleCreateRun(e) {
     e.preventDefault();
+
+    // Validation logic
+    const descEl = document.getElementById('detail-desc');
+    const procEl = document.getElementById('detail-proc');
+    const descText = descEl ? descEl.innerText.trim() : '';
+    const procText = procEl ? procEl.innerText.trim() : '';
+
+    const isWeak = (text) => {
+        if (!text || text === 'Loading...' || text === '') return true;
+        
+        const lower = text.toLowerCase().trim();
+        const placeholders = ['test', 'testing', 'abc', 'xyz', 'n/a', 'na', 'sample', 'temp', '.', '-'];
+        if (placeholders.includes(lower)) return true;
+        
+        const cleanText = text.replace(/[^a-zA-Z0-9 ]/g, '').trim();
+        if (cleanText.length < 10) return true;
+        const words = cleanText.split(/\s+/);
+        if (words.length < 3) return true;
+        
+        return false;
+    };
+
+    const isDescMissing = isWeak(descText);
+    const isProcMissing = isWeak(procText);
+    
+    const fileInput = document.getElementById('run-files');
+    const files = fileInput.files;
+
+    const validationMsgEl = document.getElementById('run-validation-msg');
+    const validationTextEl = document.getElementById('run-validation-text');
+    let errorMessage = '';
+
+    if (isDescMissing && isProcMissing) {
+        errorMessage = 'Enter a meaningful control description and audit test procedure before running the test.';
+    } else if (isDescMissing) {
+        errorMessage = 'Enter a meaningful control description before running the test.';
+    } else if (isProcMissing) {
+        errorMessage = 'Enter a meaningful audit test procedure before running the test.';
+    } else if (files.length === 0) {
+        errorMessage = 'Upload at least one evidence file before running the test.';
+    }
+
+    if (errorMessage) {
+        if (validationTextEl) validationTextEl.innerText = errorMessage;
+        if (validationMsgEl) {
+            validationMsgEl.classList.remove('hidden');
+            validationMsgEl.classList.add('flex');
+        }
+        return;
+    } else {
+        if (validationMsgEl) {
+            validationMsgEl.classList.add('hidden');
+            validationMsgEl.classList.remove('flex');
+        }
+    }
+
     const btn = document.getElementById('btn-create-run');
     btn.innerHTML = "Uploading...";
     btn.disabled = true;
 
-    const fileInput = document.getElementById('run-files');
-    const files = fileInput.files;
-    
-    if (files.length > 3) {
-        alert("Maximum 3 files allowed based on requirements.");
-        btn.innerHTML = "Upload & Create Run";
-        btn.disabled = false;
-        return;
-    }
+
 
     const formData = new FormData();
     formData.append('control_id', currentControlId);
@@ -407,7 +553,7 @@ async function handleCreateRun(e) {
         alert("Error creating run");
         console.error(ex);
     } finally {
-        btn.innerHTML = "Upload & Create Run";
+        btn.innerHTML = "Evaluate Evidence";
         btn.disabled = false;
     }
 }
@@ -437,27 +583,25 @@ async function fetchAndRenderRunStatus(id) {
         if (run.status === 'Pending') {
             analyzeBtn.style.display = 'block';
             analyzeBtn.disabled = false;
-            analyzeBtn.innerHTML = `<i class="fas fa-robot mr-2"></i> Analyze Evidence`;
-            analyzeBtn.className = "bg-green-600 hover:bg-green-700 text-white font-medium py-2 px-4 rounded-md shadow transition flex items-center";
+            analyzeBtn.innerHTML = `<i class="fas fa-play text-xs mr-2"></i> Run Analysis`;
+            analyzeBtn.className = "flex items-center justify-center gap-2 px-5 py-2 bg-emerald-600 hover:bg-emerald-700 text-white font-semibold text-sm rounded-lg shadow-sm transition-all";
             
             document.getElementById('ar-rating').innerText = "Pending Analysis";
-            document.getElementById('ar-rating').className = "text-xl font-bold p-2 rounded inline-block bg-gray-200 text-gray-600";
-            document.getElementById('ar-issues').innerHTML = "Click analyze to start.";
-            document.getElementById('ar-issues').className = "text-sm whitespace-pre-wrap text-gray-500 font-medium";
-            document.getElementById('ar-checklist-body').innerHTML = `<tr><td colspan="3" class="px-4 py-4 text-center text-gray-500">Run analysis to view checklist...</td></tr>`;
-            document.getElementById('ar-summary').innerHTML = "Files uploaded, awaiting parsing.";
-            document.getElementById('ar-workpaper').value = "";
+            document.getElementById('ar-rating').className = "text-base font-bold p-2 rounded-lg inline-flex items-center gap-2 bg-slate-100 text-slate-500 dark:bg-slate-800 dark:text-slate-400";
+            document.getElementById('ar-issues').innerHTML = "Awaiting analysis.";
+            document.getElementById('ar-issues').className = "text-sm text-slate-500 leading-relaxed";
+            document.getElementById('ar-checklist-body').innerHTML = `<tr><td colspan="3" class="px-4 py-8 text-center text-sm text-slate-400">Run analysis to populate checklist.</td></tr>`;
             
         } else if (run.status === 'Analyzing...') {
             analyzeBtn.style.display = 'block';
             analyzeBtn.disabled = true;
-            analyzeBtn.innerHTML = `<i class="fas fa-circle-notch fa-spin mr-2"></i> Analyzing...`;
-            analyzeBtn.className = "bg-gray-400 text-white font-medium py-2 px-4 rounded-md shadow flex items-center cursor-not-allowed";
+            analyzeBtn.innerHTML = `<i class="fas fa-circle-notch fa-spin mr-2"></i> Analyzing…`;
+            analyzeBtn.className = "bg-slate-300 dark:bg-slate-700 text-slate-500 dark:text-slate-400 font-semibold text-sm py-2 px-4 rounded-lg flex items-center cursor-not-allowed";
             
-            document.getElementById('ar-rating').innerText = "Analyzing...";
-            document.getElementById('ar-rating').className = "text-xl font-bold p-2 rounded inline-block bg-blue-100 text-blue-800 animate-pulse";
-            document.getElementById('ar-issues').innerHTML = "Reading documents and applying control criteria...";
-            document.getElementById('ar-checklist-body').innerHTML = `<tr><td colspan="3" class="px-4 py-4 text-center text-blue-500"><i class="fas fa-circle-notch fa-spin mr-2"></i> Analyzing...</td></tr>`;
+            document.getElementById('ar-rating').innerText = "Analyzing…";
+            document.getElementById('ar-rating').className = "text-base font-bold p-2 rounded-lg inline-flex items-center gap-2 bg-blue-50 text-blue-600 dark:bg-blue-900/30 dark:text-blue-400 animate-pulse";
+            document.getElementById('ar-issues').innerHTML = "Processing evidence against control criteria…";
+            document.getElementById('ar-checklist-body').innerHTML = `<tr><td colspan="3" class="px-4 py-8 text-center text-sm text-blue-500"><i class="fas fa-circle-notch fa-spin mr-2"></i> Analyzing…</td></tr>`;
             
             // Poll every 2 seconds
             pollingInterval = setTimeout(() => fetchAndRenderRunStatus(id), 2000);
@@ -475,7 +619,7 @@ async function fetchAndRenderRunStatus(id) {
              analyzeBtn.innerHTML = `<i class="fas fa-redo mr-2"></i> Retry Analysis`;
              
              document.getElementById('ar-rating').innerText = "Error";
-             document.getElementById('ar-rating').className = "text-xl font-bold p-2 rounded inline-block bg-red-100 text-red-800";
+             document.getElementById('ar-rating').className = "text-base font-bold p-2 rounded-lg inline-flex items-center gap-2 bg-rose-50 text-rose-600 dark:bg-rose-900/30 dark:text-rose-400";
              document.getElementById('ar-issues').innerText = run.issues;
         }
     } catch (e) {
@@ -489,11 +633,11 @@ function renderAnalysisResults(run) {
     const displayRating = run.rating ? run.rating.replace(/_/g, ' ').toUpperCase() : "UNKNOWN";
     ratingEl.innerText = displayRating;
     if (run.rating === "likely_sufficient") {
-        ratingEl.className = "text-xl font-bold p-2 rounded inline-block bg-green-100 text-green-800";
+        ratingEl.className = "text-base font-bold px-3 py-1.5 rounded-lg inline-flex items-center gap-2 bg-emerald-50 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400";
     } else if (run.rating === "likely_insufficient") {
-        ratingEl.className = "text-xl font-bold p-2 rounded inline-block bg-red-100 text-red-800";
+        ratingEl.className = "text-base font-bold px-3 py-1.5 rounded-lg inline-flex items-center gap-2 bg-rose-50 text-rose-700 dark:bg-rose-900/30 dark:text-rose-400";
     } else {
-        ratingEl.className = "text-xl font-bold p-2 rounded inline-block bg-yellow-100 text-yellow-800";
+        ratingEl.className = "text-base font-bold px-3 py-1.5 rounded-lg inline-flex items-center gap-2 bg-amber-50 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400";
     }
     
     // Issues summary
@@ -501,10 +645,10 @@ function renderAnalysisResults(run) {
         const issuesList = JSON.parse(run.issues || "[]");
         if (issuesList.length > 0) {
             document.getElementById('ar-issues').innerText = "• " + issuesList.join("\n• ");
-            document.getElementById('ar-issues').className = "text-sm whitespace-pre-wrap text-red-600 font-medium pb-2";
+            document.getElementById('ar-issues').className = "text-sm whitespace-pre-wrap text-rose-600 dark:text-rose-400 leading-relaxed";
         } else {
-            document.getElementById('ar-issues').innerText = "No major issues identified.";
-            document.getElementById('ar-issues').className = "text-sm text-green-600 font-medium";
+            document.getElementById('ar-issues').innerText = "No material issues identified.";
+            document.getElementById('ar-issues').className = "text-sm text-emerald-600 dark:text-emerald-400";
         }
     } catch(e) {
         document.getElementById('ar-issues').innerText = run.issues;
@@ -528,13 +672,17 @@ function renderAnalysisResults(run) {
                 "period_matches": "Period Matches",
                 "population_complete": "Population Complete",
                 "approvals_present": "Approvals Present",
-                "timing_sla_met": "Timing SLA Met"
+                "timing_sla_met": "Timing SLA Met",
+                "request_documented": "Request Documented",
+                "access_granted_matches": "Granted Access Matches Request"
             };
             
+            let allExceptions = [];
             for (const [key, valData] of Object.entries(rulesData)) {
                 let statusRaw = typeof valData === 'string' ? valData : valData.status;
                 let reasonRaw = typeof valData === 'string' ? "Evaluation Complete." : valData.reason;
                 let exceptions = valData.exceptions || [];
+                allExceptions = allExceptions.concat(exceptions);
                 
                 let badgeClass = "bg-slate-100 text-slate-600 dark:bg-slate-800 dark:text-slate-400";
                 let icon = '❓';
@@ -572,17 +720,17 @@ function renderAnalysisResults(run) {
                 }
                 
                 const tr = document.createElement('tr');
-                tr.className = "hover:bg-slate-50/50 dark:hover:bg-slate-900/50 transition-colors border-b border-slate-100 dark:border-slate-800 last:border-0";
+                tr.className = "hover:bg-slate-50/50 dark:hover:bg-slate-900/50 transition-colors";
                 tr.innerHTML = `
-                    <td class="px-6 py-4 font-bold text-slate-700 dark:text-slate-200 align-top">${critLabels[key] || key}</td>
-                <td class="px-6 py-4 text-center align-top">
+                    <td class="px-4 py-3.5 font-semibold text-slate-700 dark:text-slate-200 align-top text-sm">${critLabels[key] || key}</td>
+                <td class="px-4 py-3.5 text-center align-top">
                     <span class="inline-flex items-center gap-1.5 px-3 py-1 text-[10px] font-bold rounded-full ${badgeClass} uppercase tracking-wider border border-current">
                         <span>${icon}</span>
                         <span>${stateText}</span>
                     </span>
                 </td>
-                <td class="px-6 py-4 text-slate-600 dark:text-slate-400 align-top">
-                    <span class="text-xs font-semibold block">${reasonRaw}</span>
+                <td class="px-4 py-3.5 text-slate-600 dark:text-slate-400 align-top">
+                    <span class="text-xs block leading-relaxed">${reasonRaw}</span>
                     ${exceptionsHtml}
                 </td>
                 `;
@@ -622,6 +770,21 @@ function renderAnalysisResults(run) {
                         untestableEl.innerHTML = `<span class="italic opacity-80 pl-1">No execution limitations identified.</span>`;
                     }
                 }
+
+                // Flagged Exceptions
+                const exceptionsEl = document.getElementById('trust-exceptions-list');
+                if (exceptionsEl) {
+                    if (allExceptions.length > 0) {
+                        exceptionsEl.innerHTML = allExceptions.map(ex => `
+                            <div class="px-2 py-1.5 bg-rose-50 dark:bg-rose-900/10 border border-rose-100 dark:border-rose-900/30 rounded text-xs text-rose-700 dark:text-rose-400 font-medium mb-1">
+                                <div class="opacity-80 text-[10px] mb-0.5"><i class="fas fa-fingerprint mr-1"></i> ${ex.identity || 'Unknown'}</div>
+                                <div class="leading-tight">${ex.detail}</div>
+                            </div>
+                        `).join('');
+                    } else {
+                        exceptionsEl.innerHTML = `<span class="italic opacity-80 pl-1">No exceptions flagged.</span>`;
+                    }
+                }
             } else if (trustContainerEl) {
                 // If still analyzing, or old format, hide trust elements.
                 trustContainerEl.classList.add('hidden');
@@ -629,46 +792,26 @@ function renderAnalysisResults(run) {
             
         } catch(e) {
             console.error("Failed to parse checklist JSON", e);
-            tbody.innerHTML = `<tr><td colspan="3" class="px-4 py-4 text-center text-red-500">Error parsing checklist JSON</td></tr>`;
+            tbody.innerHTML = `<tr><td colspan="3" class="px-4 py-4 text-center text-sm text-rose-500">Error parsing checklist data</td></tr>`;
         }
     } else {
-         tbody.innerHTML = `<tr><td colspan="3" class="px-4 py-4 text-center text-gray-500">No checklist data found</td></tr>`;
+         tbody.innerHTML = `<tr><td colspan="3" class="px-4 py-8 text-center text-sm text-slate-400">No checklist data available</td></tr>`;
          if (trustContainerEl) trustContainerEl.classList.add('hidden');
     }
     
     // File Summaries / Trust Uploaded & Recognized
     try {
          const filesArr = JSON.parse(run.summary || "[]");
-         let htmlParts = [];
-         
-         const uploadedEl = document.getElementById('trust-uploaded-list');
          const recognizedEl = document.getElementById('trust-recognized-list');
-         let upHtml = "";
          let recHtml = "";
          
          if (filesArr.length === 0) {
-             htmlParts.push("No files analyzed.");
-             upHtml = "<div class='text-slate-500 italic'>No files uploaded</div>";
              recHtml = "<div class='text-slate-500 italic'>No files mapped</div>";
          }
          
          filesArr.forEach(f => {
-            // Original file summary array (legacy location)
-            let cols = f.columns ? f.columns.slice(0,4).join(", ") : "";
-            if (f.columns && f.columns.length > 4) cols += "...";
-            htmlParts.push(`<strong>${f.name}</strong><br>Summary: ${f.summary}<br>${f.rows ? `Rows: ${f.rows}` : ''} ${cols ? `<br>Columns: ${cols}` : ''}`);
-            
-            // New Trust Section: Uploaded
-            upHtml += `
-            <div class="flex items-center justify-between border-b border-slate-100 dark:border-slate-800 last:border-0 pb-2 mb-2">
-                <div class="truncate max-w-[200px]" title="${f.name}">
-                    <i class="fas fa-file text-slate-400 mr-2"></i><span class="font-medium text-slate-700 dark:text-slate-300">${f.name}</span>
-                </div>
-                <div class="flex items-center gap-3">
-                    ${f.rows !== undefined && f.rows !== null ? `<span class="text-xs text-slate-400 font-mono">${f.rows} rows</span>` : ''}
-                    <span class="px-2 py-0.5 rounded text-[9px] font-bold bg-slate-100 dark:bg-slate-800 text-slate-500">${f.type || 'FILE'}</span>
-                </div>
-            </div>`;
+            // original snippet deleted
+
             
             // New Trust Section: Recognized
             let rcType = f.recognized_type || "Unrecognized";
@@ -682,8 +825,11 @@ function renderAnalysisResults(run) {
             
             recHtml += `
             <div class="border-b border-slate-100 dark:border-slate-800 last:border-0 pb-3 mb-3">
+                <div class="font-medium text-slate-800 dark:text-slate-200 text-xs mb-2 truncate" title="${f.name}">
+                    <i class="fas fa-file text-slate-400 mr-1"></i> ${f.name}
+                </div>
                 <div class="flex items-center justify-between mb-2">
-                    <span class="font-bold text-xs text-brand-600 dark:text-brand-400"><i class="fas fa-tag mr-1 opacity-70"></i> ${rcType}</span>
+                    <span class="font-bold text-[10px] text-brand-600 dark:text-brand-400 bg-brand-50 dark:bg-brand-900/20 px-2 py-0.5 rounded"><i class="fas fa-tag mr-1 opacity-70"></i> ${rcType}</span>
                     <span class="px-2 py-0.5 rounded text-[9px] font-bold uppercase ${statusBadge} flex items-center gap-1"><i class="fas ${statusIcon} text-[9px]"></i> ${mapStatus}</span>
                 </div>
                 ${mapCols.length > 0 ? `
@@ -692,17 +838,26 @@ function renderAnalysisResults(run) {
                 </div>` : `<span class="text-[10px] italic text-slate-400">No canonical columns mapped</span>` }
             </div>`;
          });
-         
-         document.getElementById('ar-summary').innerHTML = htmlParts.join('<br><hr class="my-2">');
-         if(uploadedEl) uploadedEl.innerHTML = upHtml;
          if(recognizedEl) recognizedEl.innerHTML = recHtml;
          
     } catch(e) {
-         document.getElementById('ar-summary').innerHTML = run.summary || "No data.";
+         console.error("Failed to parse run summary", e);
     }
     
     // Workpaper
     document.getElementById('ar-workpaper').value = run.workpaper || "No workpaper generated.";
+    
+    // EXPLICITLY UNHIDE ALL RESULT SECTIONS
+    document.getElementById('ar-trust-container').classList.remove('hidden');
+    document.getElementById('ar-checklist-container').classList.remove('hidden');
+    document.getElementById('ar-workpaper-container').classList.remove('hidden');
+    
+    // Smooth scroll to workpaper for visibility
+    if (run.workpaper) {
+        setTimeout(() => {
+            document.getElementById('ar-workpaper-container').scrollIntoView({ behavior: 'smooth', block: 'start' });
+        }, 300);
+    }
 }
 
 async function handleAnalyze() {

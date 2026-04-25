@@ -102,8 +102,21 @@ def update_workpaper(run_id: int, payload: WorkpaperUpdate, db: Session = Depend
     db.commit()
     return {"message": "Success"}
 
+class RunRename(BaseModel):
+    name: str
+
+@app.patch("/api/test_runs/{run_id}/rename")
+def rename_test_run(run_id: int, payload: RunRename, db: Session = Depends(get_db)):
+    run = db.query(models.TestRun).filter(models.TestRun.id == run_id).first()
+    if not run:
+        raise HTTPException(status_code=404, detail="Test Run not found")
+    run.name = payload.name.strip()[:100]  # cap at 100 chars
+    db.commit()
+    db.refresh(run)
+    return run
+
 @app.post("/api/test_runs/{run_id}/analyze")
-def analyze_test_run(run_id: int, background_tasks: BackgroundTasks, db: Session = Depends(get_db)):
+def analyze_test_run(run_id: int, db: Session = Depends(get_db)):
     run = db.query(models.TestRun).filter(models.TestRun.id == run_id).first()
     if not run:
         raise HTTPException(status_code=404, detail="Test Run not found")
@@ -114,31 +127,24 @@ def analyze_test_run(run_id: int, background_tasks: BackgroundTasks, db: Session
     run.status = "Analyzing..."
     db.commit()
     
-    def background_analysis(run_id: int, control_dict: dict, file_list: list):
-        # We need a new db session for the background task
-        bg_db = next(get_db())
-        try:
-            results = analysis.analyze_evidence(run_id, control_dict, file_list)
-            bg_run = bg_db.query(models.TestRun).filter(models.TestRun.id == run_id).first()
-            bg_run.status = "Analyzed"
-            bg_run.summary = json.dumps(results["files"]) # Storing array of file dicts in summary column to keep schema same
-            bg_run.checklist_json = json.dumps(results["checklist"])
-            bg_run.rating = results["sufficiency"]
-            bg_run.issues = json.dumps(results["issues"])
-            bg_run.workpaper = results["workpaper_text"]
-            bg_db.commit()
-        except Exception as e:
-            bg_run = bg_db.query(models.TestRun).filter(models.TestRun.id == run_id).first()
-            bg_run.status = "Error"
-            bg_run.issues = f"Analysis Failed: {str(e)}"
-            bg_db.commit()
-        finally:
-            bg_db.close()
-
     control_dict = {"description": control.description, "test_procedure": control.test_procedure}
-    background_tasks.add_task(background_analysis, run_id, control_dict, files)
     
-    return {"message": "Analysis started in background"}
+    # Run synchronously because Vercel Serverless halts background tasks immediately after response
+    try:
+        results = analysis.analyze_evidence(run_id, control_dict, files)
+        run.status = "Analyzed"
+        run.summary = json.dumps(results["files"]) 
+        run.checklist_json = json.dumps(results["checklist"])
+        run.rating = results["sufficiency"]
+        run.issues = json.dumps(results["issues"])
+        run.workpaper = results["workpaper_text"]
+        db.commit()
+    except Exception as e:
+        run.status = "Error"
+        run.issues = f"Analysis Failed: {str(e)}"
+        db.commit()
+    
+    return {"message": "Analysis completed"}
 
 
 # --- Dev Helpers ---

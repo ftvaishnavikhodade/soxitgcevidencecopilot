@@ -12,17 +12,42 @@
                 extend: {
                     colors: {
                         brand: {
-                            50: '#f0f9ff',
-                            100: '#e0f2fe',
-                            600: '#3b82f6', // blue-500 equivalent
-                            700: '#2563eb', // blue-600 equivalent
+                            50: '#eff6ff',
+                            100: '#dbeafe',
+                            200: '#bfdbfe',
+                            400: '#60a5fa',
+                            500: '#3b82f6',
+                            600: '#2563eb',
+                            700: '#1d4ed8',
+                            800: '#1e40af',
+                            900: '#1e3a8a',
                         },
                         ui: {
-                            lightBg: '#f8fafc',
-                            darkBg: '#1f2937',
-                            lightText: '#1e40af',
-                            darkText: '#f3f4f6',
+                            lightBg: '#f0f4f8',
+                            darkBg: '#0b1120',
+                            lightText: '#0f172a',
+                            darkText: '#f1f5f9',
                             accent: '#3b82f6'
+                        }
+                    },
+                    animation: {
+                        'float': 'float 6s ease-in-out infinite',
+                        'float-slow': 'float 8s ease-in-out infinite',
+                        'shimmer': 'shimmer 2s linear infinite',
+                        'fade-in-up': 'fadeInUp 0.5s ease-out',
+                    },
+                    keyframes: {
+                        float: {
+                            '0%, 100%': { transform: 'translateY(0px)' },
+                            '50%': { transform: 'translateY(-8px)' },
+                        },
+                        shimmer: {
+                            '0%': { backgroundPosition: '-200% 0' },
+                            '100%': { backgroundPosition: '200% 0' },
+                        },
+                        fadeInUp: {
+                            '0%': { opacity: '0', transform: 'translateY(12px)' },
+                            '100%': { opacity: '1', transform: 'translateY(0)' },
                         }
                     }
                 }
@@ -30,58 +55,149 @@
         }
     </script>
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
     <style>
-        body { font-family: 'Inter', sans-serif; }
+        body { font-family: 'Inter', sans-serif; -webkit-font-smoothing: antialiased; -moz-osx-font-smoothing: grayscale; }
         .hidden { display: none; }
+        
+        /* Premium glass header */
         .glass-header {
-            background: rgba(255, 255, 255, 0.8);
-            backdrop-filter: blur(12px);
-            -webkit-backdrop-filter: blur(12px);
+            background: rgba(255, 255, 255, 0.7);
+            backdrop-filter: blur(20px) saturate(180%);
+            -webkit-backdrop-filter: blur(20px) saturate(180%);
         }
         .dark .glass-header {
-            background: rgba(15, 23, 42, 0.8);
+            background: rgba(11, 17, 32, 0.82);
         }
-        .gradient-text {
-            background: linear-gradient(135deg, #0ea5e9 0%, #2563eb 100%);
-            -webkit-background-clip: text;
-            background-clip: text;
-            -webkit-text-fill-color: transparent;
+        
+        /* Animated gradient mesh background - more refined */
+        .mesh-bg {
+            background:
+                radial-gradient(circle at 0% 0%, rgba(59, 130, 246, 0.08) 0%, transparent 40%),
+                radial-gradient(circle at 100% 0%, rgba(99, 102, 241, 0.08) 0%, transparent 40%),
+                radial-gradient(circle at 100% 100%, rgba(14, 165, 233, 0.08) 0%, transparent 40%),
+                radial-gradient(circle at 0% 100%, rgba(129, 140, 248, 0.08) 0%, transparent 40%);
+        }
+
+        /* Glass sidebar */
+        .glass-sidebar {
+            background: rgba(255,255,255,0.4);
+            backdrop-filter: blur(16px);
+            -webkit-backdrop-filter: blur(16px);
+        }
+        .dark .glass-sidebar {
+            background: rgba(11,17,32,0.6);
+        }
+
+        /* Premium card system - elegant depth */
+        .card {
+            background: white;
+            border: 1px solid rgba(226, 232, 240, 0.5);
+            border-radius: 1.25rem;
+            box-shadow: 
+                0 0 0 1px rgba(0,0,0,0.01),
+                0 4px 6px -1px rgba(0,0,0,0.02),
+                0 10px 15px -3px rgba(0,0,0,0.03);
+            transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+        .card:hover { 
+            border-color: rgba(59, 130, 246, 0.3);
+            box-shadow: 
+                0 0 0 1px rgba(59, 130, 246, 0.1),
+                0 10px 20px -5px rgba(0,0,0,0.04),
+                0 25px 50px -12px rgba(0,0,0,0.08);
+            transform: translateY(-2px);
+        }
+        .dark .card { background: rgba(15, 23, 42, 0.85); border-color: rgba(30, 41, 59, 0.8); }
+
+        /* Input styling */
+        textarea, input[type='text'] { border: 1px solid #cbd5e1; border-radius: 0.75rem; }
+        .dark textarea, .dark input[type='text'] { border-color: #334155; }
+        textarea:focus, input[type='text']:focus { border-color: #3b82f6; box-shadow: 0 0 0 4px rgba(59, 130, 246, 0.1); outline: none; }
+
+        /* Gradient button */
+        .btn-primary {
+            background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%);
+            transition: all 0.2s ease;
+        }
+        .btn-primary:hover {
+            background: linear-gradient(135deg, #2563eb 0%, #1d4ed8 100%);
+            box-shadow: 0 4px 16px -2px rgba(37, 99, 235, 0.4);
+            transform: translateY(-1px);
+        }
+
+        /* Decorative dot grid */
+        .dot-grid {
+            background-image: radial-gradient(circle, rgba(148,163,184,0.15) 1px, transparent 1px);
+            background-size: 20px 20px;
+        }
+        .dark .dot-grid {
+            background-image: radial-gradient(circle, rgba(71,85,105,0.2) 1px, transparent 1px);
+        }
+
+        /* Sidebar run card hover */
+        .run-card {
+            transition: all 0.2s ease;
+            border: 1px solid rgba(226, 232, 240, 0.6);
+        }
+        .run-card:hover {
+            border-color: #3b82f6;
+            box-shadow: 0 0 0 1px rgba(59,130,246,0.1), 0 4px 12px -2px rgba(59,130,246,0.08);
+            transform: translateY(-1px);
+        }
+
+        /* Scrollbar styling */
+        ::-webkit-scrollbar { width: 6px; height: 6px; }
+        ::-webkit-scrollbar-track { background: transparent; }
+        ::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 999px; }
+        ::-webkit-scrollbar-thumb:hover { background: #94a3b8; }
+        .dark ::-webkit-scrollbar-thumb { background: #334155; }
+
+        /* Accent line */
+        .accent-line {
+            height: 3px;
+            background: linear-gradient(90deg, #3b82f6 0%, #8b5cf6 50%, #06b6d4 100%);
         }
     </style>
 </head>
-<body class="bg-ui-lightBg dark:bg-ui-darkBg text-ui-lightText dark:text-ui-darkText transition-colors duration-300 min-h-screen flex flex-col">
+<body class="bg-ui-lightBg dark:bg-ui-darkBg text-slate-800 dark:text-slate-200 transition-colors duration-300 min-h-screen flex flex-col mesh-bg">
     
+    <!-- TOP ACCENT LINE -->
+    <div class="accent-line w-full fixed top-0 z-[60]"></div>
+
     <!-- NAVIGATION / HEADER -->
-    <header class="sticky top-0 z-50 glass-header border-b border-slate-200 dark:border-slate-800">
+    <header class="sticky top-[3px] z-50 glass-header border-b border-slate-200/60 dark:border-slate-800/60">
         <div class="max-w-screen-2xl mx-auto px-4 sm:px-6 lg:px-8">
-            <div class="flex items-center justify-between h-20">
+            <div class="flex items-center justify-between h-16">
                 <div class="flex items-center gap-3">
                     <div class="flex items-center gap-3 cursor-pointer group" onclick="showDashboard()">
-                        <div class="bg-gradient-to-br from-brand-600 to-indigo-700 p-2.5 rounded-xl shadow-lg group-hover:scale-105 transition-transform flex-shrink-0">
-                            <i class="fas fa-shield-halved text-white text-xl"></i>
+                        <div class="relative">
+                            <div class="bg-gradient-to-br from-blue-500 via-brand-600 to-indigo-700 p-2.5 rounded-xl shadow-lg shadow-blue-500/20 group-hover:shadow-blue-500/30 group-hover:scale-105 transition-all flex-shrink-0">
+                                <i class="fas fa-shield-halved text-white text-lg"></i>
+                            </div>
+                            <div class="absolute -top-1 -right-1 w-3 h-3 bg-emerald-400 rounded-full border-2 border-white dark:border-slate-900 animate-pulse"></div>
                         </div>
                         <div class="hidden sm:block">
-                            <h1 class="font-bold text-xl tracking-tight text-ui-lightText dark:text-ui-darkText leading-none">SOX ITGC Evidence Copilot</h1>
-                            <p class="text-[10px] uppercase tracking-widest font-semibold text-brand-600 dark:text-brand-400 mt-1">JML Controls</p>
+                            <h1 class="font-bold text-lg tracking-tight text-slate-900 dark:text-white leading-none">SOX ITGC Evidence Copilot</h1>
+                            <p class="text-[10px] uppercase tracking-[0.2em] font-semibold text-brand-600 dark:text-brand-400 mt-0.5 flex items-center gap-1.5">
+                                <span class="w-1.5 h-1.5 rounded-full bg-brand-500"></span>
+                                JML Controls
+                            </p>
                         </div>
                     </div>
                     
-                    <!-- Breadcrumb (Visible when in workspace) -->
-                    <div id="top-breadcrumb" class="hidden items-center gap-3 ml-4 pl-4 border-l border-slate-200 dark:border-slate-700">
-                        <button onclick="showDashboard()" class="text-sm font-semibold text-slate-500 hover:text-brand-600 dark:hover:text-brand-400 transition">Dashboard</button>
-                        <i class="fas fa-chevron-right text-xs text-slate-300 dark:text-slate-600"></i>
-                        <span id="top-breadcrumb-current" class="text-sm font-bold text-ui-lightText dark:text-ui-darkText">Control Workspace</span>
+                    <!-- Breadcrumb -->
+                    <div id="top-breadcrumb" class="hidden items-center gap-3 ml-4 pl-4 border-l border-slate-200/60 dark:border-slate-700/60">
+                        <button onclick="showDashboard()" class="text-sm font-medium text-slate-400 hover:text-brand-600 dark:hover:text-brand-400 transition">Dashboard</button>
+                        <i class="fas fa-chevron-right text-[10px] text-slate-300 dark:text-slate-600"></i>
+                        <span id="top-breadcrumb-current" class="text-sm font-semibold text-slate-700 dark:text-slate-200">Control Workspace</span>
                     </div>
                 </div>
                 
                 <div class="flex items-center gap-3">
-                    
-
-                    
-                    <button id="theme-toggle" class="p-2.5 rounded-lg border border-slate-200 dark:border-slate-700 hover:bg-slate-100 dark:hover:bg-slate-800 transition">
-                        <i id="theme-toggle-dark-icon" class="hidden fas fa-moon"></i>
-                        <i id="theme-toggle-light-icon" class="hidden fas fa-sun"></i>
+                    <button id="theme-toggle" class="p-2 rounded-lg border border-slate-200/60 dark:border-slate-700/60 hover:bg-slate-100 dark:hover:bg-slate-800 transition text-slate-500">
+                        <i id="theme-toggle-dark-icon" class="hidden fas fa-moon text-sm"></i>
+                        <i id="theme-toggle-light-icon" class="hidden fas fa-sun text-sm"></i>
                     </button>
                 </div>
             </div>
@@ -92,94 +208,122 @@
     <div class="flex-1 flex overflow-hidden">
         
         <!-- SIDEBAR: RECENT RUNS -->
-        <aside id="main-sidebar" class="hidden lg:flex flex-col w-80 border-r border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-950 transition-all duration-300 relative">
-            <div class="p-6 border-b border-slate-200 dark:border-slate-800 flex justify-between items-center bg-slate-50/50 dark:bg-slate-900/50">
-                <h2 id="sidebar-title" class="font-bold text-sm uppercase tracking-wider text-slate-500">Global History</h2>
-                <button onclick="toggleSort()" class="text-slate-400 hover:text-ui-accent transition-colors" title="Toggle Date Sort">
-                    <i id="sidebar-sort-icon" class="fas fa-sort-amount-down"></i>
+        <aside id="main-sidebar" class="hidden lg:flex flex-col w-80 border-r border-slate-200/40 dark:border-slate-800/40 glass-sidebar transition-all duration-300 relative">
+            <div class="p-5 border-b border-slate-200/50 dark:border-slate-800/50 flex justify-between items-center">
+                <h2 id="sidebar-title" class="font-bold text-[11px] uppercase tracking-[0.15em] text-slate-400 flex items-center gap-2">
+                    <i class="fas fa-clock-rotate-left text-xs text-brand-500"></i>
+                    Global History
+                </h2>
+                <button onclick="toggleSort()" class="text-slate-300 hover:text-brand-500 transition-colors" title="Toggle Date Sort">
+                    <i id="sidebar-sort-icon" class="fas fa-sort-amount-down text-sm"></i>
                 </button>
             </div>
             
-            <!-- Sticky New Run Button for Context -->
-            <div id="sidebar-new-run-container" class="hidden p-4 border-b border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-950 shadow-sm z-10">
-                <button onclick="showCreateRun()" class="w-full bg-[#3b82f6] hover:bg-blue-600 text-white font-bold py-2.5 rounded-lg shadow-sm transition-all flex items-center justify-center gap-2">
-                    <i class="fas fa-play"></i> New Test Run
+            <!-- Sticky New Run Button -->
+            <div id="sidebar-new-run-container" class="hidden p-4 border-b border-slate-200/50 dark:border-slate-800/50 z-10">
+                <button onclick="showCreateRun()" class="w-full btn-primary text-white font-semibold py-2.5 rounded-xl flex items-center justify-center gap-2 text-sm">
+                    <i class="fas fa-play text-xs"></i> New Test Run
                 </button>
             </div>
             
-            <div class="flex-1 overflow-y-auto p-4 space-y-3 bg-slate-50/20 dark:bg-slate-950/50" id="sidebar-runs-list">
-                <!-- Dynamic Sidebar Runs -->
-                <div class="animate-pulse space-y-4">
-                    <div class="h-12 bg-slate-100 dark:bg-slate-800 rounded-lg"></div>
-                    <div class="h-12 bg-slate-100 dark:bg-slate-800 rounded-lg"></div>
-                    <div class="h-12 bg-slate-100 dark:bg-slate-800 rounded-lg"></div>
+            <div class="flex-1 overflow-y-auto p-3 space-y-2.5" id="sidebar-runs-list">
+                <div class="animate-pulse space-y-3 p-2">
+                    <div class="h-16 bg-slate-100/60 dark:bg-slate-800/40 rounded-xl"></div>
+                    <div class="h-16 bg-slate-100/40 dark:bg-slate-800/30 rounded-xl"></div>
                 </div>
             </div>
         </aside>
 
         <!-- MAIN VIEWPORT -->
-        <main class="flex-1 overflow-y-auto bg-slate-50 dark:bg-slate-900/50 relative">
+        <main class="flex-1 overflow-y-auto relative">
             <div class="w-full max-w-[1600px] mx-auto p-4 lg:p-8">
                 
                 <!-- DASHBOARD VIEW -->
                 <div id="view-dashboard">
+                    <!-- Dashboard Hero -->
                     <div class="flex flex-col md:flex-row justify-between items-start md:items-center mb-8 gap-4">
                         <div>
-                            <h2 class="text-3xl font-extrabold text-ui-lightText dark:text-ui-darkText">Controls Dashboard</h2>
-                            <p class="text-slate-500 mt-1">Manage and evaluate SOX JML control procedures.</p>
+                            <h2 class="text-2xl font-bold text-slate-900 dark:text-white flex items-center gap-3">
+                                Controls Dashboard
+                                <span class="inline-flex items-center gap-1 px-2 py-0.5 bg-brand-50 dark:bg-brand-900/20 text-brand-600 dark:text-brand-400 text-[10px] font-bold uppercase tracking-wider rounded-full border border-brand-200/50 dark:border-brand-800/30">
+                                    <span class="w-1.5 h-1.5 bg-brand-500 rounded-full animate-pulse"></span>
+                                    Live
+                                </span>
+                            </h2>
+                            <p class="text-sm text-slate-500 mt-1.5">Manage and evaluate SOX JML control procedures.</p>
                         </div>
-                        <button onclick="showCreateControl()" class="bg-[#3b82f6] hover:bg-blue-600 text-white font-bold py-2.5 px-6 rounded-xl shadow-lg shadow-blue-500/20 transition-all hover:-translate-y-0.5">
-                            <i class="fas fa-plus mr-2"></i>New Procedure
+                        <button onclick="showCreateControl()" class="btn-primary text-white font-semibold text-sm py-2.5 px-5 rounded-xl flex items-center gap-2">
+                            <i class="fas fa-plus text-xs"></i>New Procedure
                         </button>
                     </div>
                     
                     <div class="grid grid-cols-1 gap-8">
                         <!-- Controls List -->
-                        <div class="bg-white dark:bg-slate-900 rounded-2xl shadow-md border border-slate-300 dark:border-slate-700 overflow-hidden">
-                            <div class="px-6 py-4 border-b border-slate-200 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-900/50 flex justify-between items-center">
-                                <h3 class="font-bold text-ui-lightText dark:text-ui-darkText">Configured Controls</h3>
-                                <span class="bg-brand-100 text-brand-700 dark:bg-brand-900/30 dark:text-brand-400 text-[10px] font-bold px-2 py-1 rounded-md uppercase">SOX Repository</span>
+                        <div class="card overflow-hidden">
+                            <div class="px-5 py-3.5 border-b border-slate-100 dark:border-slate-800/60 flex justify-between items-center bg-slate-50/50 dark:bg-slate-900/30">
+                                <h3 class="font-semibold text-sm text-slate-700 dark:text-slate-200 flex items-center gap-2">
+                                    <i class="fas fa-layer-group text-brand-500 text-xs"></i>
+                                    Configured Controls
+                                </h3>
                             </div>
-                            <ul id="controls-list" class="divide-y divide-slate-100 dark:divide-slate-800">
-                                <li class="p-8 text-center text-slate-500">Initializing controls layer...<br><span class="text-xs text-slate-400 mt-1 block">Create your first control procedure to begin testing.</span></li>
+                            <ul id="controls-list" class="divide-y divide-slate-100 dark:divide-slate-800/50">
+                                <li class="px-5 py-12 text-center">
+                                    <div class="w-16 h-16 bg-gradient-to-br from-slate-50 to-slate-100 dark:from-slate-800 dark:to-slate-800/50 rounded-2xl mx-auto flex items-center justify-center mb-4">
+                                        <i class="fas fa-folder-open text-2xl text-slate-300 dark:text-slate-600"></i>
+                                    </div>
+                                    <p class="text-sm font-medium text-slate-400">No controls configured.</p>
+                                    <p class="text-xs text-slate-400 mt-1">Click <strong class="text-brand-600 dark:text-brand-400">New Procedure</strong> to get started.</p>
+                                </li>
                             </ul>
                         </div>
                         
-                        <!-- Recent Activity (Small screen replacement for sidebar) -->
-                        <div class="lg:hidden bg-white dark:bg-slate-900 rounded-2xl shadow-md border border-slate-300 dark:border-slate-700 overflow-hidden">
-                            <div class="px-6 py-4 border-b border-slate-200 dark:border-slate-800 flex justify-between items-center">
-                                <h3 class="font-bold text-slate-800 dark:text-slate-100">Recent Test Executions</h3>
-                                <button onclick="toggleSort()" class="text-slate-400 hover:text-ui-accent transition-colors">
+                        <!-- Recent Activity (Small screen) -->
+                        <div class="lg:hidden card overflow-hidden">
+                            <div class="px-5 py-3.5 border-b border-slate-100 dark:border-slate-800/60 flex justify-between items-center bg-slate-50/50 dark:bg-slate-900/30">
+                                <h3 class="font-semibold text-sm text-slate-700 dark:text-slate-200 flex items-center gap-2">
+                                    <i class="fas fa-chart-line text-brand-500 text-xs"></i>
+                                    Recent Test Executions
+                                </h3>
+                                <button onclick="toggleSort()" class="text-slate-400 hover:text-brand-500 transition-colors">
                                     <i id="dash-sort-icon" class="fas fa-sort-amount-down-alt mr-1"></i>
                                     <span class="text-[10px] font-bold uppercase tracking-wider">Date</span>
                                 </button>
                             </div>
-                            <ul id="dashboard-runs-list" class="divide-y divide-slate-100 dark:divide-slate-800">
-                                <li class="p-8 text-center text-slate-500">Loading activity...</li>
+                            <ul id="dashboard-runs-list" class="divide-y divide-slate-100 dark:divide-slate-800/50">
+                                <li class="p-8 text-center text-slate-500 text-sm">Loading activity...</li>
                             </ul>
                         </div>
                     </div>
                 </div>
 
                 <!-- CREATE CONTROL VIEW -->
-                <div id="view-create-control" class="hidden max-w-2xl mx-auto">
-                    <button onclick="showDashboard()" class="mb-6 flex items-center gap-2 text-brand-600 font-bold hover:translate-x-1 transition-transform">
-                        <i class="fas fa-arrow-left"></i> <span>Back to Dashboard</span>
+                <div id="view-create-control" class="hidden max-w-2xl mx-auto animate-fade-in-up">
+                    <button onclick="showDashboard()" class="mb-6 flex items-center gap-2 text-brand-600 font-semibold text-sm hover:translate-x-[-2px] transition-transform">
+                        <i class="fas fa-arrow-left text-xs"></i> <span>Back to Dashboard</span>
                     </button>
-                    <div class="bg-white dark:bg-slate-900 shadow-2xl border border-slate-300 dark:border-slate-700 rounded-2xl p-8">
-                        <h2 class="text-2xl font-bold mb-8">Define Control Procedure</h2>
-                        <form id="form-create-control" onsubmit="handleCreateControl(event)" class="space-y-6">
+                    <div class="card p-6 lg:p-8">
+                        <div class="flex items-center gap-3 mb-6">
+                            <div class="w-10 h-10 bg-gradient-to-br from-brand-50 to-brand-100 dark:from-brand-900/30 dark:to-brand-800/20 rounded-xl flex items-center justify-center">
+                                <i class="fas fa-file-signature text-brand-600 dark:text-brand-400"></i>
+                            </div>
+                            <h2 class="text-xl font-bold text-slate-900 dark:text-white">Define Control Procedure</h2>
+                        </div>
+                        <form id="form-create-control" onsubmit="handleCreateControl(event)" class="space-y-5">
                             <div>
-                                <label class="block text-xs font-bold uppercase tracking-widest text-slate-500 mb-2">Control Description</label>
-                                <textarea id="control-desc" rows="3" class="w-full bg-slate-50 dark:bg-slate-900 border-slate-200 dark:border-slate-800 rounded-xl focus:ring-2 focus:ring-brand-500 focus:border-transparent p-4 outline-none transition" required placeholder="Describe the SOX control logic here..."></textarea>
+                                <label class="block text-xs font-semibold uppercase tracking-wider text-slate-500 mb-2">Control Description</label>
+                                <textarea id="control-desc" rows="3" class="w-full bg-white dark:bg-slate-900 p-3 text-sm outline-none transition" required placeholder="Describe the SOX control objective…"></textarea>
                             </div>
                             <div>
-                                <label class="block text-xs font-bold uppercase tracking-widest text-slate-500 mb-2">Audit Test Procedure</label>
-                                <textarea id="control-proc" rows="4" class="w-full bg-slate-50 dark:bg-slate-900 border-slate-200 dark:border-slate-800 rounded-xl focus:ring-2 focus:ring-brand-500 focus:border-transparent p-4 outline-none transition" required placeholder="Step-by-step audit steps (e.g., 1. Select sample...)"></textarea>
+                                <label class="block text-xs font-semibold uppercase tracking-wider text-slate-500 mb-2">Audit Test Procedure</label>
+                                <textarea id="control-proc" rows="4" class="w-full bg-white dark:bg-slate-900 p-3 text-sm outline-none transition" required placeholder="Step-by-step audit steps (e.g., 1. Select sample…)"></textarea>
                             </div>
-                            <div class="pt-4">
-                                <button type="submit" id="btn-create-control" class="w-full bg-[#3b82f6] hover:bg-blue-600 text-white font-bold py-3 rounded-xl shadow-lg transition-all">
-                                    Finalize Procedure
+                            <div id="create-control-error" class="hidden text-sm font-semibold text-rose-600 mb-4 bg-rose-50 dark:bg-rose-900/10 border border-rose-200 dark:border-rose-900/30 p-3 rounded-xl items-center gap-2">
+                                <i class="fas fa-circle-exclamation text-rose-500 mt-0.5"></i>
+                                <span id="create-control-error-text"></span>
+                            </div>
+                            <div class="pt-2">
+                                <button type="submit" id="btn-create-control" class="w-full btn-primary text-white font-semibold text-sm py-3 rounded-xl">
+                                    Save Procedure
                                 </button>
                             </div>
                         </form>
@@ -189,17 +333,23 @@
                 <!-- CONTROL DETAIL VIEW (WORKSPACE) -->
                 <div id="view-control-detail" class="hidden">
                     
-                    <!-- Slim Header Banner over full width -->
-                    <div class="bg-white dark:bg-slate-900 rounded-2xl border border-slate-300 dark:border-slate-700 shadow-sm mb-8 overflow-hidden">
-                        <div class="px-6 py-4 flex flex-col lg:flex-row gap-6">
-                            <div class="flex-1">
-                                <h4 class="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1">Control Objective</h4>
-                                <p class="text-sm font-medium text-ui-lightText dark:text-ui-darkText leading-relaxed" id="detail-desc"></p>
+                    <!-- Slim Header Banner -->
+                    <div class="card mb-6 overflow-hidden">
+                        <div class="px-5 py-4 flex flex-col lg:flex-row gap-5">
+                            <div class="flex-1 min-w-0">
+                                <h4 class="text-[10px] font-semibold text-slate-400 uppercase tracking-wider mb-1.5 flex items-center gap-1.5">
+                                    <i class="fas fa-bullseye text-brand-500 text-[8px]"></i>
+                                    Control Objective
+                                </h4>
+                                <p class="text-sm text-slate-700 dark:text-slate-300 leading-relaxed" id="detail-desc"></p>
                             </div>
-                            <div class="hidden lg:block w-px bg-slate-200 dark:bg-slate-800"></div>
-                            <div class="flex-1">
-                                <h4 class="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1">Audit Test Procedure</h4>
-                                <p class="text-sm font-medium text-ui-lightText dark:text-ui-darkText leading-relaxed" id="detail-proc"></p>
+                            <div class="hidden lg:block w-px bg-slate-200/60 dark:bg-slate-800/60 flex-shrink-0"></div>
+                            <div class="flex-1 min-w-0">
+                                <h4 class="text-[10px] font-semibold text-slate-400 uppercase tracking-wider mb-1.5 flex items-center gap-1.5">
+                                    <i class="fas fa-list-check text-brand-500 text-[8px]"></i>
+                                    Audit Test Procedure
+                                </h4>
+                                <p class="text-sm text-slate-700 dark:text-slate-300 leading-relaxed" id="detail-proc"></p>
                             </div>
                         </div>
                     </div>
@@ -208,184 +358,197 @@
                     <div class="w-full">
                             
                             <!-- New Run Workspace -->
-                            <div id="workspace-new-run" class="bg-white dark:bg-slate-900 rounded-2xl p-8 border border-slate-300 dark:border-slate-700 shadow-2xl hidden">
+                            <div id="workspace-new-run" class="card p-6 lg:p-8 hidden animate-fade-in-up">
                                 <div class="flex items-center gap-3 mb-8">
-                                    <div class="bg-brand-100 dark:bg-brand-900/30 p-3 rounded-xl text-brand-600">
-                                        <i class="fas fa-file-arrow-up text-xl"></i>
+                                    <div class="w-12 h-12 bg-gradient-to-br from-blue-50 to-indigo-100 dark:from-blue-900/30 dark:to-indigo-900/20 rounded-xl flex items-center justify-center">
+                                        <i class="fas fa-file-arrow-up text-xl text-brand-600 dark:text-brand-400"></i>
                                     </div>
                                     <div>
-                                        <h3 class="text-xl font-bold">Initiate Evidence Test</h3>
+                                        <h3 class="text-lg font-bold text-slate-900 dark:text-white">Submit Evidence Files</h3>
                                         <p class="text-sm text-slate-500">Upload CSV/Excel listings and PDF approval tickets.</p>
                                     </div>
                                 </div>
                                 
                                 <form id="form-create-run" onsubmit="handleCreateRun(event)" enctype="multipart/form-data" class="space-y-6">
                                     <input type="hidden" id="run-control-id">
-                                    <div class="relative border-4 border-dashed border-slate-100 dark:border-slate-800 rounded-3xl p-10 text-center hover:bg-slate-50 dark:hover:bg-slate-900/50 transition-all cursor-pointer group">
-                                        <input type="file" id="run-files" name="files" multiple accept=".csv,.xlsx,.xls,.pdf" class="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-10">
-                                        <div class="flex flex-col items-center">
-                                            <div class="w-16 h-16 bg-brand-50 dark:bg-brand-900/20 rounded-full flex items-center justify-center mb-4 group-hover:scale-110 transition-transform">
-                                                <i class="fas fa-cloud-arrow-up text-2xl text-brand-600"></i>
+                                    <div class="relative border-2 border-dashed border-slate-200 dark:border-slate-700/60 rounded-2xl p-8 text-center hover:border-brand-300 dark:hover:border-brand-700 hover:bg-brand-50/30 dark:hover:bg-brand-900/5 transition-all cursor-pointer group dot-grid">
+                                        <input type="file" id="run-files" name="files" multiple accept=".csv,.xlsx,.xls,.pdf" class="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-10" onchange="document.getElementById('run-selected-files').innerHTML = Array.from(this.files).map(f => `<div class='flex items-center gap-2 bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-300 px-3 py-2.5 rounded-xl text-sm font-medium border border-slate-200 dark:border-slate-700 shadow-sm'><i class='fas fa-file-lines text-brand-500 text-xs'></i> ${f.name}</div>`).join('')">
+                                        <div class="flex flex-col items-center relative z-0">
+                                            <div class="w-14 h-14 bg-gradient-to-br from-blue-50 to-indigo-50 dark:from-blue-900/30 dark:to-indigo-900/20 rounded-2xl flex items-center justify-center mb-3 group-hover:scale-110 transition-transform shadow-sm">
+                                                <i class="fas fa-cloud-arrow-up text-2xl text-brand-500"></i>
                                             </div>
-                                            <p class="font-bold text-lg mb-1">Click to Upload Evidence</p>
-                                            <p class="text-slate-400 text-sm">Select JML listings and approval PDF files</p>
-                                            <p class="mt-4 inline-flex items-center gap-2 px-3 py-1 bg-slate-100 dark:bg-slate-800 rounded-full text-[10px] font-bold text-slate-500 uppercase">Limit: 3 Files per run</p>
+                                            <p class="font-semibold text-sm text-slate-700 dark:text-slate-300 mb-0.5">Drag & drop or click to upload</p>
+                                            <p class="text-slate-400 text-xs">CSV, Excel, or PDF files</p>
                                         </div>
                                     </div>
-                                    <div class="flex justify-end pt-4">
-                                        <button type="submit" id="btn-create-run" class="px-8 py-3 bg-[#3b82f6] hover:bg-blue-600 text-white font-bold rounded-xl shadow-lg transition-all">
-                                            Start Evidence Processing
+                                    <div id="run-selected-files" class="space-y-2 px-1"></div>
+                                    <div id="run-validation-msg" class="hidden text-sm font-semibold text-rose-600 mb-4 bg-rose-50 dark:bg-rose-900/10 border border-rose-200 dark:border-rose-900/30 p-3 rounded-xl items-center gap-2">
+                                        <i class="fas fa-circle-exclamation text-rose-500 mt-0.5"></i>
+                                        <span id="run-validation-text"></span>
+                                    </div>
+                                    <div class="flex justify-end pt-2">
+                                        <button type="submit" id="btn-create-run" class="px-6 py-2.5 btn-primary text-white font-semibold text-sm rounded-xl">
+                                            Evaluate Evidence
                                         </button>
                                     </div>
                                 </form>
                             </div>
 
                             <!-- Run Analysis Workspace -->
-                            <div id="workspace-analysis" class="bg-white dark:bg-slate-900 rounded-2xl border border-slate-300 dark:border-slate-700 shadow-2xl overflow-hidden hidden">
+                            <div id="workspace-analysis" class="card overflow-hidden hidden animate-fade-in-up">
                                 <!-- Workspace Header -->
-                                <div class="px-8 py-6 bg-slate-50/50 dark:bg-slate-900/50 border-b border-slate-200 dark:border-slate-800 flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
+                                <div class="px-5 py-4 bg-gradient-to-r from-slate-50/80 to-white dark:from-slate-900/80 dark:to-slate-900/40 border-b border-slate-200/60 dark:border-slate-800/60 flex flex-col md:flex-row justify-between items-start md:items-center gap-3">
                                     <div>
                                         <div class="flex items-center gap-2">
-                                            <span class="text-[10px] font-bold uppercase tracking-widest text-slate-400">Execution Reference</span>
-                                            <span class="px-2 py-0.5 bg-slate-200 dark:bg-slate-800 rounded text-xs font-bold font-mono">ID#<span id="ar-run-id"></span></span>
+                                            <span class="text-[10px] font-semibold uppercase tracking-wider text-slate-400">Execution Reference</span>
+                                            <span class="px-1.5 py-0.5 bg-slate-100 dark:bg-slate-800 rounded text-[11px] font-semibold font-mono text-slate-500 dark:text-slate-400">ID#<span id="ar-run-id"></span></span>
                                         </div>
-                                        <h3 class="text-xl font-bold mt-1">Audit Evaluation Report</h3>
+                                        <h3 class="text-lg font-bold text-slate-900 dark:text-white mt-0.5">Audit Evaluation Report</h3>
                                     </div>
                                     <div class="flex items-center gap-3 w-full md:w-auto">
-                                        <div class="px-3 py-1.5 rounded-lg bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-xs font-semibold flex items-center gap-2">
+                                        <div class="px-3 py-1.5 rounded-lg bg-white dark:bg-slate-800 border border-slate-200/60 dark:border-slate-700/60 text-xs font-semibold flex items-center gap-2">
                                             <span class="w-2 h-2 rounded-full bg-brand-500 animate-pulse"></span>
                                             <span id="ar-status">Pending</span>
                                         </div>
-                                        <button id="btn-analyze" onclick="handleAnalyze()" class="flex-1 md:flex-none flex items-center justify-center gap-2 px-6 py-2.5 bg-[#3b82f6] hover:bg-blue-600 text-white font-bold rounded-xl shadow-lg transition-all">
-                                            <i class="fas fa-brain"></i> <span>Execute AI Test</span>
+                                        <button id="btn-analyze" onclick="handleAnalyze()" class="flex-1 md:flex-none flex items-center justify-center gap-2 px-5 py-2 btn-primary text-white font-semibold text-sm rounded-xl">
+                                            <i class="fas fa-play text-xs"></i> <span>Run Analysis</span>
                                         </button>
                                     </div>
                                 </div>
                                 
-                                <div class="p-8 space-y-8" id="ar-results-container">
+                                <div class="p-5 lg:p-6 space-y-6" id="ar-results-container">
                                     <!-- High Level Stats -->
-                                    <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-                                        <div class="p-6 rounded-2xl border border-slate-100 dark:border-slate-800 bg-slate-50/30 dark:bg-slate-900/30">
-                                            <h4 class="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-4">Conclusion & Rating</h4>
-                                            <div id="ar-rating" class="text-lg font-extrabold flex items-center gap-2">
-                                                <i class="fas fa-hourglass-start text-slate-400"></i> Awaiting Run
+                                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                        <div class="p-4 rounded-xl border border-slate-100/80 dark:border-slate-800/60 bg-gradient-to-br from-slate-50/50 to-white dark:from-slate-900/30 dark:to-slate-900/10">
+                                            <h4 class="text-[10px] font-semibold text-slate-400 uppercase tracking-wider mb-2 flex items-center gap-1.5">
+                                                <i class="fas fa-gauge-high text-brand-500 text-[8px]"></i>
+                                                Conclusion & Rating
+                                            </h4>
+                                            <div id="ar-rating" class="text-base font-bold flex items-center gap-2 text-slate-400">
+                                                <i class="fas fa-hourglass-start text-xs"></i> Awaiting analysis
                                             </div>
                                         </div>
-                                        <div class="p-6 rounded-2xl border border-slate-100 dark:border-slate-800 bg-slate-50/30 dark:bg-slate-900/30">
-                                            <h4 class="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-4">Observation Summary</h4>
-                                            <p id="ar-issues" class="text-sm font-medium leading-relaxed">Evaluation pending analysis engine execution.</p>
+                                        <div class="p-4 rounded-xl border border-slate-100/80 dark:border-slate-800/60 bg-gradient-to-br from-slate-50/50 to-white dark:from-slate-900/30 dark:to-slate-900/10">
+                                            <h4 class="text-[10px] font-semibold text-slate-400 uppercase tracking-wider mb-2 flex items-center gap-1.5">
+                                                <i class="fas fa-eye text-brand-500 text-[8px]"></i>
+                                                Observation Summary
+                                            </h4>
+                                            <p id="ar-issues" class="text-sm text-slate-500 leading-relaxed">Evaluation pending.</p>
                                         </div>
                                     </div>
                                     
                                     <!-- Evidence Readiness & Testability -->
                                     <div id="ar-trust-container" class="hidden animate-fade-in-up">
-                                        <div class="flex items-center gap-2 mb-4">
-                                            <i class="fas fa-shield-halved text-brand-600"></i>
-                                            <h4 class="text-sm font-bold text-slate-800 dark:text-slate-100 uppercase tracking-wide">Evidence Readiness & Testability</h4>
+                                        <div class="flex items-center gap-3 mb-6">
+                                            <div class="h-10 w-1 pt-[2px] bg-brand-500 rounded-full"></div>
+                                            <div>
+                                                <h4 class="text-sm font-extrabold text-slate-800 dark:text-slate-100 tracking-tight">Evidence Trust & Reliability</h4>
+                                                <p class="text-[10px] text-slate-400 font-bold uppercase tracking-widest">Diagnostic metadata based on uploaded evidence profile</p>
+                                            </div>
                                             
                                             <!-- Labels -->
-                                            <div class="ml-auto flex items-center gap-2">
-                                                <span id="ar-confidence-badge" class="px-2 py-1 text-[10px] uppercase font-bold rounded bg-slate-100 text-slate-500">Confidence: N/A</span>
-                                                <span id="ar-sufficiency-badge" class="px-2 py-1 text-[10px] uppercase font-bold rounded bg-slate-100 text-slate-500">Sufficiency: N/A</span>
+                                            <div class="ml-auto flex items-center gap-3">
+                                                <div id="ar-confidence-badge" class="px-3 py-1.5 text-[10px] font-extrabold uppercase tracking-widest rounded-xl bg-slate-50 dark:bg-slate-900/50 border border-slate-200 dark:border-slate-800 text-slate-500 shadow-sm">CONFIDENCE: N/A</div>
+                                                <div id="ar-sufficiency-badge" class="px-3 py-1.5 text-[10px] font-extrabold uppercase tracking-widest rounded-xl bg-slate-50 dark:bg-slate-900/50 border border-slate-200 dark:border-slate-800 text-slate-500 shadow-sm">SUFFICIENCY: N/A</div>
                                             </div>
                                         </div>
+                                        
                                         <div class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-4 mb-8">
-                                            <!-- A. Uploaded -->
-                                            <div class="p-4 rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 shadow-sm">
-                                                <h5 class="text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-3">A. Evidence Uploaded</h5>
-                                                <div id="trust-uploaded-list" class="space-y-2 text-sm"></div>
+                                            <!-- Recognized Evidence -->
+                                            <div class="card p-5 border-emerald-100 dark:border-emerald-900/20 bg-emerald-50/5 relative overflow-hidden">
+                                                <div class="absolute -top-4 -right-4 w-16 h-16 bg-emerald-500/5 rounded-full"></div>
+                                                <h5 class="text-[10px] font-bold text-emerald-600 uppercase tracking-widest mb-4 flex items-center gap-2">
+                                                    <i class="fas fa-check-double text-[11px]"></i>
+                                                    Mapped Artifacts
+                                                </h5>
+                                                <div id="trust-recognized-list" class="space-y-3 relative z-10"></div>
                                             </div>
-                                            <!-- B. Recognized -->
-                                            <div class="p-4 rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 shadow-sm">
-                                                <h5 class="text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-3">B. Evidence Recognized</h5>
-                                                <div id="trust-recognized-list" class="space-y-2 text-sm"></div>
+                                            <!-- Missing Evidence -->
+                                            <div class="card p-5 border-amber-100 dark:border-amber-900/20 bg-amber-50/5 relative overflow-hidden">
+                                                <div class="absolute -top-4 -right-4 w-16 h-16 bg-amber-500/5 rounded-full"></div>
+                                                <h5 class="text-[10px] font-bold text-amber-600 uppercase tracking-widest mb-4 flex items-center gap-2">
+                                                    <i class="fas fa-triangle-exclamation text-[11px]"></i>
+                                                    Omitted Evidence
+                                                </h5>
+                                                <div id="trust-missing-list" class="space-y-3 relative z-10"></div>
                                             </div>
-                                            <!-- C. Missing Evidence -->
-                                            <div class="p-4 rounded-xl border border-rose-100 dark:border-rose-900/30 bg-rose-50/30 dark:bg-rose-900/10 shadow-sm">
-                                                <h5 class="text-[10px] font-bold text-rose-400 uppercase tracking-wider mb-3">C. Missing Required Evidence</h5>
-                                                <div id="trust-missing-list" class="space-y-2 text-sm text-slate-600 dark:text-slate-400"></div>
+                                            <!-- Untestable -->
+                                            <div class="card p-5 border-rose-100 dark:border-rose-900/20 bg-rose-50/5 relative overflow-hidden">
+                                                <div class="absolute -top-4 -right-4 w-16 h-16 bg-rose-500/5 rounded-full"></div>
+                                                <h5 class="text-[10px] font-bold text-rose-600 uppercase tracking-widest mb-4 flex items-center gap-2">
+                                                    <i class="fas fa-shield-slash text-[11px]"></i>
+                                                    Execution Blocks
+                                                </h5>
+                                                <div id="trust-untestable-list" class="space-y-3 relative z-10"></div>
                                             </div>
-                                            <!-- D. Untestable Rules -->
-                                            <div class="p-4 rounded-xl border border-amber-100 dark:border-amber-900/30 bg-amber-50/30 dark:bg-amber-900/10 shadow-sm">
-                                                <h5 class="text-[10px] font-bold text-amber-500 uppercase tracking-wider mb-3">D. What Could Not Be Tested</h5>
-                                                <div id="trust-untestable-list" class="space-y-2 text-sm text-slate-600 dark:text-slate-400"></div>
+                                            <!-- Exceptions -->
+                                            <div class="card p-5 border-blue-100 dark:border-blue-900/20 bg-blue-50/5 relative overflow-hidden">
+                                                <div class="absolute -top-4 -right-4 w-16 h-16 bg-blue-500/5 rounded-full"></div>
+                                                <h5 class="text-[10px] font-bold text-blue-600 uppercase tracking-widest mb-4 flex items-center gap-2">
+                                                    <i class="fas fa-fingerprint text-[11px]"></i>
+                                                    Exception Logic
+                                                </h5>
+                                                <div id="trust-exceptions-list" class="space-y-3 relative z-10"></div>
                                             </div>
                                         </div>
                                     </div>
                                     
-                                    <!-- Structured Checklist Table (IMPROVED) -->
-                                    <div>
-                                        <div class="flex items-center gap-2 mb-4">
-                                            <i class="fas fa-list-check text-brand-600"></i>
-                                            <h4 class="text-sm font-bold text-slate-800 dark:text-slate-100 uppercase tracking-wide">Control Evaluation Checklist</h4>
-                                        </div>
-                                        <div class="overflow-x-auto border border-slate-200 dark:border-slate-800 rounded-xl">
-                                            <table class="w-full text-left border-collapse">
-                                                <thead class="bg-slate-50 dark:bg-slate-900 text-[10px] font-bold uppercase tracking-widest text-slate-500">
-                                                    <tr>
-                                                        <th class="px-6 py-4">Audit Criterion</th>
-                                                        <th class="px-6 py-4 text-center">Status</th>
-                                                        <th class="px-6 py-4">Evaluation Details</th>
+                                    <!-- Detailed Checklist Table -->
+                                    <div id="ar-checklist-container" class="hidden animate-fade-in-up">
+                                        <h4 class="text-xs font-bold text-slate-700 dark:text-slate-200 uppercase tracking-wider mb-3 flex items-center gap-2">
+                                           <i class="fas fa-clipboard-check text-brand-500 text-sm"></i>
+                                           Evaluation Checklist
+                                        </h4>
+                                        <div class="rounded-xl border border-slate-200/60 dark:border-slate-800/60 overflow-hidden">
+                                            <table class="w-full text-left">
+                                                <thead>
+                                                    <tr class="bg-gradient-to-r from-slate-50 to-slate-50/50 dark:from-slate-900 dark:to-slate-900/50 text-[10px] uppercase tracking-wider text-slate-400 font-semibold">
+                                                        <th class="px-4 py-3">Criteria</th>
+                                                        <th class="px-4 py-3 text-center">Status</th>
+                                                        <th class="px-4 py-3">Finding</th>
                                                     </tr>
                                                 </thead>
-                                                <tbody id="ar-checklist-body" class="divide-y divide-slate-100 dark:divide-slate-800 text-sm">
-                                                    <tr><td colspan="3" class="px-6 py-10 text-center text-slate-400 italic">No checklist data available. Initiate AI analysis.</td></tr>
+                                                <tbody id="ar-checklist-body" class="divide-y divide-slate-100/80 dark:divide-slate-800/50">
+                                                    <tr><td colspan="3" class="px-4 py-8 text-center text-sm text-slate-400">Run analysis to populate checklist.</td></tr>
                                                 </tbody>
                                             </table>
                                         </div>
                                     </div>
-
-                                    <!-- Artifact Evidence Summary -->
-                                    <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
-                                        <div class="space-y-4">
-                                            <div class="flex items-center gap-2">
-                                                <i class="fas fa-paperclip text-brand-600"></i>
-                                                <h4 class="text-sm font-bold text-slate-800 dark:text-slate-100 uppercase tracking-wide">Evidence Summary</h4>
-                                            </div>
-                                            <div id="ar-summary" class="text-xs leading-relaxed text-slate-600 dark:text-slate-400 bg-slate-50 dark:bg-slate-900 p-5 rounded-xl border border-slate-100 dark:border-slate-800">
-                                                Awaiting file parsing...
-                                            </div>
-                                        </div>
-
-                                        <!-- Draft Workpaper (Enterprise Style) -->
-                                        <div class="space-y-4">
-                                            <div class="flex items-center justify-between">
-                                                <div class="flex items-center gap-2">
-                                                    <i class="fas fa-file-signature text-brand-600"></i>
-                                                    <h4 class="text-sm font-bold text-slate-800 dark:text-slate-100 uppercase tracking-wide">Audit Narrative & Workpaper</h4>
-                                                </div>
-                                                <div class="flex gap-2">
-                                                    <span class="text-[10px] text-slate-400 font-bold uppercase tracking-widest">Drafting Mode</span>
-                                                </div>
-                                            </div>
-                                            <textarea id="ar-workpaper" rows="10" class="w-full text-[13px] font-mono bg-white dark:bg-slate-950 border-slate-200 dark:border-slate-800 rounded-xl focus:ring-2 focus:ring-brand-500 focus:border-transparent p-5 outline-none leading-relaxed shadow-inner" spellcheck="false" placeholder="The finalized audit narrative will generated here..."></textarea>
-                                            
-                                            <!-- Dedicated Export/Save Actions -->
-                                            <div class="bg-slate-50 dark:bg-slate-900/50 rounded-2xl p-4 border border-slate-200 dark:border-slate-800 flex flex-wrap gap-3 items-center">
-                                                <button id="btn-save-wp" onclick="saveWorkpaper()" class="bg-brand-600 hover:bg-brand-700 text-white px-5 py-2 rounded-xl font-bold transition-all flex items-center gap-2 shadow-md shadow-brand-500/10 text-sm">
-                                                    <i class="fas fa-save"></i> Save Draft
-                                                </button>
-                                                <div class="h-6 w-px bg-slate-200 dark:bg-slate-800 mx-1"></div>
-                                                <button onclick="exportWorkpaperTXT()" class="border border-slate-200 dark:border-slate-700 hover:bg-white dark:hover:bg-slate-800 text-slate-600 dark:text-slate-300 px-4 py-2 rounded-xl font-bold transition-all flex items-center gap-2 text-sm">
-                                                    <i class="fas fa-file-lines text-brand-600"></i> TXT
-                                                </button>
-                                                <button onclick="exportWorkpaperPDF()" class="bg-rose-50 hover:bg-rose-100 dark:bg-rose-500/10 dark:hover:bg-rose-500/20 text-rose-600 dark:text-rose-400 px-4 py-2 rounded-xl font-bold transition-all flex items-center gap-2 border border-rose-200/50 dark:border-rose-500/20 text-sm">
-                                                    <i class="fas fa-file-pdf"></i> PDF Report
-                                                </button>
-                                            </div>
-                                        </div>
-                                    </div>
                                     
+                                    <!-- Workpaper Section -->
+                                    <div id="ar-workpaper-container" class="hidden animate-fade-in-up">
+                                        <div class="flex items-center justify-between mb-3">
+                                            <h4 class="text-xs font-bold text-slate-700 dark:text-slate-200 uppercase tracking-wider flex items-center gap-2">
+                                                <i class="fas fa-file-pen text-brand-500 text-sm"></i>
+                                                Evaluation Workpaper
+                                            </h4>
+                                            <div class="flex items-center gap-2">
+                                                <button onclick="exportTxt()" class="text-[11px] font-semibold text-slate-400 hover:text-brand-600 transition px-3 py-1.5 rounded-lg border border-slate-200/60 dark:border-slate-700/60 hover:border-brand-300 flex items-center gap-1.5">
+                                                    <i class="fas fa-download text-[10px]"></i> TXT
+                                                </button>
+                                                <button onclick="exportPdf()" class="text-[11px] font-semibold text-slate-400 hover:text-brand-600 transition px-3 py-1.5 rounded-lg border border-slate-200/60 dark:border-slate-700/60 hover:border-brand-300 flex items-center gap-1.5">
+                                                    <i class="fas fa-file-pdf text-[10px]"></i> PDF
+                                                </button>
+                                            </div>
+                                        </div>
+                                        <textarea id="ar-workpaper" rows="12" class="w-full bg-white dark:bg-slate-900 p-4 text-sm font-mono outline-none transition leading-relaxed" placeholder="The finalized audit narrative will be generated here..."></textarea>
+                                    </div>
                                 </div>
                             </div>
                             
                             <!-- Empty State -->
-                            <div id="workspace-empty" class="bg-white dark:bg-slate-950/20 border-2 border-dashed border-slate-200 dark:border-slate-800 rounded-3xl p-24 text-center">
-                                <div class="bg-brand-50 dark:bg-brand-900/10 w-20 h-20 rounded-full mx-auto flex items-center justify-center mb-6">
-                                    <i class="fas fa-file-contract text-3xl text-brand-600 opacity-50"></i>
+                            <div id="workspace-empty" class="card p-12 lg:p-16 text-center dot-grid relative overflow-hidden group">
+                                <!-- Decorative shapes -->
+                                <div class="absolute top-6 right-8 w-24 h-24 bg-brand-500/5 rounded-full opacity-50 animate-float"></div>
+                                <div class="absolute bottom-8 left-12 w-16 h-16 bg-indigo-500/5 rounded-full opacity-40 animate-float-slow"></div>
+                                
+                                <div class="relative z-10 flex flex-col items-center">
+                                    <div class="mb-8 transform group-hover:scale-105 transition-transform duration-700">
+                                        <img src="C:/Users/Lenovo/.gemini/antigravity/brain/927bf11c-09be-4145-8d98-a801bf58db62/audit_empty_state_illustration_1776555268323.png" alt="Audit Illustration" class="w-64 h-64 object-contain drop-shadow-2xl">
+                                    </div>
+                                    <h3 class="text-xl font-extrabold text-slate-800 dark:text-slate-100 mb-2 tracking-tight">Intelligence Workspace Ready</h3>
+                                    <p class="text-sm text-slate-500 max-w-sm mx-auto leading-relaxed">Select a historical run from the sidebar or initiate a fresh evaluation to see granular audit insights.</p>
                                 </div>
-                                <h3 class="text-xl font-bold mb-2">Audit Workspace Ready</h3>
-                                <p class="text-slate-400 max-w-sm mx-auto">Select a previous test execution or start a new evidence run to begin evaluation.</p>
                             </div>
 
                         </div>
@@ -397,16 +560,14 @@
     </div>
 
     <!-- FOOTER -->
-    <footer class="bg-white dark:bg-slate-950 border-t border-slate-200 dark:border-slate-800 py-6">
+    <footer class="border-t border-slate-200/50 dark:border-slate-800/50 py-4 bg-white/30 dark:bg-slate-950/30">
         <div class="max-w-screen-2xl mx-auto px-4 sm:px-6 lg:px-8">
-            <div class="flex flex-col md:flex-row justify-between items-center gap-4 text-xs font-semibold text-slate-500 uppercase tracking-widest">
-                <div class="flex items-center gap-2">
-                    <i class="fas fa-code text-brand-600"></i>
-                    <span class="tracking-wide">Built by Vaishnavi Khodade&nbsp;&nbsp;·&nbsp;&nbsp;Designed for IT Audit</span>
-                </div>
-                <div class="text-slate-400">
-                    &copy; 2026 SOX ITGC Evidence Copilot
-                </div>
+            <div class="flex flex-col md:flex-row justify-between items-center gap-2 text-[11px] text-slate-400">
+                <span class="flex items-center gap-1.5">
+                    <i class="fas fa-shield-halved text-brand-500 text-[10px]"></i>
+                    Built by Vaishnavi Khodade · Designed for IT Audit
+                </span>
+                <span>&copy; 2026 SOX ITGC Evidence Copilot</span>
             </div>
         </div>
     </footer>

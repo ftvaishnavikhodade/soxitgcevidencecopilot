@@ -17,6 +17,7 @@ class TestRun(Base):
 
     id = Column(Integer, primary_key=True, index=True)
     control_id = Column(Integer, ForeignKey("controls.id"), nullable=False)
+    name = Column(String, nullable=True)  # User-editable display name
     created_at = Column(DateTime, default=datetime.utcnow)
     
     # Store JSON string of file paths
