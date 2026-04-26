@@ -331,24 +331,53 @@ def analyze_evidence(run_id: int, control: dict, files: list) -> dict:
     ctrl_proc = control.get("test_procedure", "N/A")
     type_label = control_type.replace("_", " ").title()
 
-    evidence_names = ", ".join([f.get("name", "Unknown File") for f in files_data]) if files_data else "None provided"
-    missing_evidence_list = ", ".join(missing_evidence) if missing_evidence else "None identified"
+    # Scope and Basis
+    scope_basis = "The conclusions reached in this draft are based exclusively on the uploaded evidence artifacts. Automated testing was conducted on the provided sample/documents."
+    if missing_evidence:
+        scope_basis += " Due to omitted expected evidence, complete testability was restricted."
 
-    testing_performed_lines = []
+    # Build Evidence Inventory Table
+    evidence_inventory_lines = ["| File Name | Detected Type | Recognition | Supporting Role |", "|---|---|---|---|"]
+    if files_data:
+        for f in files_data:
+            fname = f.get("name", "Unknown File").replace("|", "-")
+            det_type = f.get("recognized_type", "Unrecognized").replace("|", "-")
+            rec = f.get("mapping_status", "Not Recognized").replace("|", "-")
+            roles_sup = ", ".join(f.get("mapped_columns", [])) if f.get("mapped_columns") else "N/A"
+            roles_sup = roles_sup.replace("|", "-")
+            evidence_inventory_lines.append(f"| {fname} | {det_type} | {rec} | {roles_sup} |")
+    else:
+        evidence_inventory_lines = ["No files provided for analysis."]
+    evidence_inventory_str = "\n".join(evidence_inventory_lines)
+
+    # Build Testing Matrix Table
+    testing_matrix_lines = ["| Test Attribute | Result | Basis / Rationale | Review Needed |", "|---|---|---|---|"]
     for r_name, r_val in rules.items():
-        status_label = str(r_val.get("status", "Unknown")).upper()
-        testing_performed_lines.append(f"- {r_name.replace('_', ' ').title()}: {status_label}")
-    testing_performed_str = "\n".join(testing_performed_lines)
+        attr_label = r_name.replace("_", " ").title().replace("|", "-")
+        status_label = str(r_val.get("status", "Unknown")).upper().replace("|", "-")
+        reason = r_val.get("reason", "N/A").replace("|", "-").replace("\n", " ").strip()
+        rev_req = "Yes" if status_label in ["FAIL", "UNCLEAR", "NOT_TESTABLE"] else "No"
+        testing_matrix_lines.append(f"| {attr_label} | {status_label} | {reason} | {rev_req} |")
+    testing_matrix_str = "\n".join(testing_matrix_lines)
+
+    missing_evidence_list = "\n- ".join(missing_evidence) if missing_evidence else "All expected standard evidence types appear present."
+    if missing_evidence: missing_evidence_list = "- " + missing_evidence_list
+
+    exceptions_list = "\n- ".join(all_exceptions) if all_exceptions else "No confirmed exceptions identified."
+    if all_exceptions: exceptions_list = "- " + exceptions_list
+
+    limitations_list = "\n- ".join(untestable_rules) if untestable_rules else "No major testing limitations noted."
+    if untestable_rules: limitations_list = "- " + limitations_list
 
     # Draft Conclusion formatting
     if all_exceptions:
-        conc_text = "The procedures were executed with exceptions noted. Follow-up is required."
+        conc_text = "The procedures were executed with exceptions noted. The control appears to have failed certain attribute tests, requiring immediate follow-up."
     elif sufficiency != "likely_sufficient" and missing_evidence:
-        conc_text = "Unable to reach a confident conclusion due to missing or insufficient evidence."
+        conc_text = "Unable to reach a confident conclusion. Testing was severely limited due to missing or insufficient evidence. The control is partially unsupported."
     elif sufficiency == "unclear":
-        conc_text = "Review is limited by evidence testability. Partial or unclear evidence prevented a complete evaluation."
+        conc_text = "Review is limited by evidence testability. Partial or unclear evidence prevented a complete evaluation of the control's design and operating effectiveness."
     else:
-        conc_text = "Testing procedures executed without material exception based on the evidence provided."
+        conc_text = "Testing procedures executed without material exception based on the evidence provided. The evaluated sample appears generally supported."
 
     workpaper = f"""**Control Objective**
 {ctrl_desc}
@@ -356,26 +385,36 @@ def analyze_evidence(run_id: int, control: dict, files: list) -> dict:
 **Audit Procedure Performed**
 {ctrl_proc}
 
+**Scope and Basis of Evaluation**
+{scope_basis}
+
 **Evidence Inventory**
-- Files Analyzed: {evidence_names}
-- Missing Expected Evidence: {missing_evidence_list}
+{evidence_inventory_str}
 
 **Testing Matrix**
-{testing_performed_str}
+{testing_matrix_str}
+
+**Expected Evidence Gaps**
+{missing_evidence_list}
+
+**Testing Limitations**
+{limitations_list}
+
+**Exceptions Identified**
+{exceptions_list}
 
 **Results Summary**
-- Evaluation: {sufficiency.replace('_', ' ').title()}
-- Test Confidence: {confidence}
-- Evidence Testability: {evidence_sufficiency}
-
-**Exceptions / Limitations**
-{exceptions_log}
+- Overall Evaluation: {sufficiency.replace('_', ' ').title()}
+- Test Confidence Level: {confidence}
+- Evidence Testability Index: {evidence_sufficiency}
 
 **Draft Auditor Conclusion**
 {conc_text}
 
-**Reviewer Notes**
-[Leave your review notes here...]
+**Reviewer Section**
+- Reviewer Notes: 
+- Additional Follow-up Required: 
+- Final Sign-off: 
 """
 
     return {

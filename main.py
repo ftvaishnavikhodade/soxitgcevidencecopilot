@@ -324,10 +324,13 @@ def export_workpaper_pdf(run_id: int, payload: WorkpaperUpdate, db: Session = De
         [Paragraph("<b>Status:</b>", body_style), Paragraph(run.status, body_style), Paragraph("<b>Rating:</b>", body_style), Paragraph(run.rating.replace('_', ' ').title() if run.rating else 'Pending', body_style)],
         [Paragraph("<b>Execution:</b>", body_style), Paragraph(exec_date, body_style), "", ""]
     ]
-    t_meta = Table(meta_data, colWidths=[80, 180, 70, 150])
+    t_meta = Table(meta_data, colWidths=[80, 160, 60, 168])
     t_meta.setStyle(TableStyle([
         ('VALIGN', (0,0), (-1,-1), 'TOP'),
-        ('BOTTOMPADDING', (0,0), (-1,-1), 4),
+        ('BOTTOMPADDING', (0,0), (-1,-1), 8),
+        ('TOPPADDING', (0,0), (-1,-1), 8),
+        ('INNERGRID', (0,0), (-1,-1), 0.5, HexColor('#E2E8F0')),
+        ('BOX', (0,0), (-1,-1), 0.5, HexColor('#94A3B8')),
     ]))
     
     Story.append(Paragraph("EVALUATION METADATA", header_style))
@@ -335,9 +338,17 @@ def export_workpaper_pdf(run_id: int, payload: WorkpaperUpdate, db: Session = De
     
     # Control Desc
     Story.append(Spacer(1, 8))
-    Story.append(Paragraph("<b>Control Description:</b>", body_style))
-    Story.append(Paragraph(control.description, body_style))
-    Story.append(Spacer(1, 16))
+    desc_table = Table(
+        [[Paragraph("<b>Control Description:</b>", body_style), Paragraph(control.description, body_style)]], 
+        colWidths=[120, 348]
+    )
+    desc_table.setStyle(TableStyle([
+        ('VALIGN', (0,0), (-1,-1), 'TOP'),
+        ('BOTTOMPADDING', (0,0), (-1,-1), 0),
+        ('TOPPADDING', (0,0), (-1,-1), 0),
+    ]))
+    Story.append(desc_table)
+    Story.append(Spacer(1, 24))
     
     # ------------------ VISUAL SUMMARY CHARTS ------------------
     try:
@@ -454,9 +465,46 @@ def export_workpaper_pdf(run_id: int, payload: WorkpaperUpdate, db: Session = De
     # Use a small indented style for bullets
     bullet_style = ParagraphStyle('BulletStyle', parent=body_style, leftIndent=16, spaceBefore=2, spaceAfter=2)
     
-    for p in paras:
-        if not p.strip():
+    in_table = False
+    table_data = []
+
+    for i, p in enumerate(paras):
+        if not p.strip() and not in_table:
             Story.append(Spacer(1, 4))
+            continue
+            
+        is_table_row = p.strip().startswith('|') and p.strip().endswith('|')
+        
+        if is_table_row:
+            in_table = True
+            cols = [col.strip() for col in p.strip().strip('|').split('|')]
+            if all(col.replace('-', '').strip() == '' for col in cols): continue
+            
+            row_paras = []
+            for col in cols:
+                if len(table_data) == 0:
+                    row_paras.append(Paragraph(f"<b>{col}</b>", ParagraphStyle('TH', parent=body_style, textColor=HexColor('#FFFFFF'), fontSize=9)))
+                else:
+                    row_paras.append(Paragraph(col, ParagraphStyle('TD', parent=body_style, fontSize=9)))
+            table_data.append(row_paras)
+            
+            # End of table check
+            if (i + 1 == len(paras)) or not paras[i+1].strip().startswith('|'):
+                num_cols = len(table_data[0]) if table_data else 1
+                t = Table(table_data, colWidths=[468.0 / num_cols] * num_cols)
+                t.setStyle(TableStyle([
+                    ('BACKGROUND', (0,0), (-1,0), HexColor('#475569')),
+                    ('TEXTCOLOR', (0,0), (-1,0), HexColor('#FFFFFF')),
+                    ('ALIGN', (0,0), (-1,-1), 'LEFT'),
+                    ('VALIGN', (0,0), (-1,-1), 'TOP'),
+                    ('INNERGRID', (0,0), (-1,-1), 0.5, HexColor('#E2E8F0')),
+                    ('BOX', (0,0), (-1,-1), 0.5, HexColor('#94A3B8')),
+                    ('BOTTOMPADDING', (0,0), (-1,-1), 8),
+                    ('TOPPADDING', (0,0), (-1,-1), 8),
+                ]))
+                Story.append(t)
+                in_table = False
+                table_data = []
             continue
             
         import re
@@ -465,9 +513,9 @@ def export_workpaper_pdf(run_id: int, payload: WorkpaperUpdate, db: Session = De
         if p_escaped.startswith('**') and p_escaped.endswith('**') and len(p_escaped) > 4:
             clean_head = p_escaped[2:-2]
             p_formatted = f"<font color='#0F172A'><b>{clean_head}</b></font>"
-            Story.append(Spacer(1, 6))
+            Story.append(Spacer(1, 10))
             Story.append(Paragraph(p_formatted, body_style))
-            Story.append(HRFlowable(width="100%", thickness=0.5, color=HexColor('#F1F5F9'), spaceBefore=2, spaceAfter=6))
+            Story.append(HRFlowable(width="100%", thickness=0.5, color=HexColor('#F1F5F9'), spaceBefore=2, spaceAfter=8))
             continue
             
         p_formatted = re.sub(r'\*\*(.*?)\*\*', r'<b>\1</b>', p_escaped)
