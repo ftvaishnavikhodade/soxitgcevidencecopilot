@@ -308,7 +308,7 @@ def export_workpaper_pdf(run_id: int, payload: WorkpaperUpdate, db: Session = De
     subtitle_style = ParagraphStyle('SubTitle', parent=styles['Normal'], fontName='Helvetica', fontSize=11, textColor=HexColor('#64748B'), spaceAfter=24)
     header_style = ParagraphStyle('HeaderStyle', parent=styles['Normal'], fontName='Helvetica-Bold', fontSize=14, textColor=HexColor('#0F172A'), spaceBefore=18, spaceAfter=8)
     body_style = ParagraphStyle('BodyStyle', parent=styles['Normal'], fontName='Helvetica', fontSize=12, leading=18, textColor=body_textColor, spaceAfter=8)
-    section_title_style = ParagraphStyle('SectionTitle', parent=styles['Normal'], fontName='Helvetica-Bold', fontSize=14, textColor=HexColor('#0F172A'))
+    section_title_style = ParagraphStyle('SectionTitle', parent=styles['Normal'], fontName='Helvetica-Bold', fontSize=13, textColor=HexColor('#0F172A'))
     body_center_style = ParagraphStyle('BodyCenter', parent=body_style, alignment=TA_CENTER)
 
     Story = []
@@ -342,10 +342,10 @@ def export_workpaper_pdf(run_id: int, payload: WorkpaperUpdate, db: Session = De
     
     # Control Description centered structural block
     Story.append(Spacer(1, 14))
-    desc_label_style = ParagraphStyle('DescLabel', parent=body_center_style, fontSize=9, textColor=HexColor('#64748B'))
+    desc_label_style = ParagraphStyle('DescLabel', parent=body_center_style, fontName='Helvetica-Bold', fontSize=13, textColor=HexColor('#0F172A'))
     desc_table = Table(
         [
-            [Paragraph("<b>CONTROL DESCRIPTION</b>", desc_label_style)],
+            [Paragraph("Control Description", desc_label_style)],
             [Paragraph(control.description, body_center_style)]
         ], 
         colWidths=[468]
@@ -468,7 +468,7 @@ def export_workpaper_pdf(run_id: int, payload: WorkpaperUpdate, db: Session = De
     Story.append(PageBreak())
 
     Story.append(Paragraph("EVALUATION NARRATIVE & WORKPAPER", header_style))
-    Story.append(HRFlowable(width="100%", thickness=1, color=HexColor('#E2E8F0'), spaceBefore=2, spaceAfter=12))
+    Story.append(HRFlowable(width="100%", thickness=1, color=HexColor('#E2E8F0'), spaceBefore=2, spaceAfter=14))
     
     # Formatting the workpaper text
     text = payload.workpaper.replace('\r\n', '\n')
@@ -495,9 +495,9 @@ def export_workpaper_pdf(run_id: int, payload: WorkpaperUpdate, db: Session = De
             row_paras = []
             for col in cols:
                 if len(table_data) == 0:
-                    row_paras.append(Paragraph(f"<b>{col}</b>", ParagraphStyle('TH', parent=body_style, alignment=TA_CENTER, textColor=HexColor('#FFFFFF'), fontSize=9)))
+                    row_paras.append(Paragraph(f"<b>{col}</b>", ParagraphStyle('TH', parent=body_style, alignment=TA_CENTER, textColor=HexColor('#FFFFFF'))))
                 else:
-                    row_paras.append(Paragraph(col, ParagraphStyle('TD', parent=body_style, alignment=TA_CENTER, fontSize=9)))
+                    row_paras.append(Paragraph(col, ParagraphStyle('TD', parent=body_style, alignment=TA_CENTER)))
             table_data.append(row_paras)
             
             # End of table check
@@ -524,9 +524,9 @@ def export_workpaper_pdf(run_id: int, payload: WorkpaperUpdate, db: Session = De
         # Convert **text** to clean section headers
         if p_escaped.startswith('**') and p_escaped.endswith('**') and len(p_escaped) > 4:
             clean_head = p_escaped[2:-2]
-            Story.append(Spacer(1, 8))
+            Story.append(Spacer(1, 14))
             Story.append(Paragraph(clean_head, section_title_style))
-            Story.append(HRFlowable(width="100%", thickness=0.5, color=HexColor('#F1F5F9'), spaceBefore=2, spaceAfter=4))
+            Story.append(HRFlowable(width="100%", thickness=0.5, color=HexColor('#E2E8F0'), spaceBefore=4, spaceAfter=10))
             continue
             
         p_formatted = re.sub(r'\*\*(.*?)\*\*', r'<b>\1</b>', p_escaped)
