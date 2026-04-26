@@ -337,17 +337,15 @@ def export_workpaper_pdf(run_id: int, payload: WorkpaperUpdate, db: Session = De
     import dateutil.tz
     ct_now = datetime.datetime.now(dateutil.tz.gettz('America/Chicago'))
     
-    # Fully platform-independent time format to avoid `ValueError` on %-d or %#d
-    clean_hour = ct_now.strftime('%I').lstrip('0') or '12'
-    exec_date = f"{ct_now.strftime('%B')} {ct_now.day}, {ct_now.strftime('%Y')} {clean_hour}:{ct_now.strftime('%M %p %Z')}"
-    exec_style = ParagraphStyle('ExecStyle', parent=body_center_style, fontSize=11)
+    # Fully platform-independent time format using 24-hour military clock with seconds
+    exec_date = f"{ct_now.strftime('%B')} {ct_now.day}, {ct_now.strftime('%Y %H:%M:%S %Z')}"
     
     meta_data = [
         [Paragraph("<b>Control ID:</b>", body_center_style), Paragraph(str(control.id), body_center_style), Paragraph("<b>Run ID:</b>", body_center_style), Paragraph(str(run.id), body_center_style)],
         [Paragraph("<b>Status:</b>", body_center_style), Paragraph(run.status, body_center_style), Paragraph("<b>Rating:</b>", body_center_style), Paragraph(overall_evaluate, body_center_style)],
-        [Paragraph("<b>Execution:</b>", body_center_style), Paragraph(exec_date, exec_style), Paragraph("<b>Purpose:</b>", body_center_style), Paragraph("Draft for Review", body_center_style)]
+        [Paragraph("<b>Execution:</b>", body_center_style), Paragraph(exec_date, body_center_style), Paragraph("<b>Purpose:</b>", body_center_style), Paragraph("Draft for Review", body_center_style)]
     ]
-    t_meta = Table(meta_data, colWidths=[80, 160, 70, 158])
+    t_meta = Table(meta_data, colWidths=[80, 165, 70, 153])
     t_meta.setStyle(TableStyle([
         ('ALIGN', (0,0), (-1,-1), 'CENTER'),
         ('VALIGN', (0,0), (-1,-1), 'MIDDLE'),
