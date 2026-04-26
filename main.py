@@ -333,7 +333,13 @@ def export_workpaper_pdf(run_id: int, payload: WorkpaperUpdate, db: Session = De
     sufficiency = trust_data.get("evidence_sufficiency", "Unknown").replace("_", " ").title()
     rev_needs = "Yes (Action Required)" if "Insufficient" in overall_evaluate or "Unclear" in overall_evaluate else "No (Routine)"
 
-    exec_date = run.created_at.strftime('%B %d, %Y %H:%M:%S UTC') if run.created_at else 'N/A'
+    if run.created_at:
+        import dateutil.tz
+        utc_dt = run.created_at.replace(tzinfo=dateutil.tz.tzutc()) if not run.created_at.tzinfo else run.created_at
+        ct_dt = utc_dt.astimezone(dateutil.tz.gettz('US/Central'))
+        exec_date = ct_dt.strftime('%B %d, %Y %I:%M:%S %p %Z')
+    else:
+        exec_date = 'N/A'
     meta_data = [
         [Paragraph("<b>Control ID:</b>", body_center_style), Paragraph(str(control.id), body_center_style), Paragraph("<b>Run ID:</b>", body_center_style), Paragraph(str(run.id), body_center_style)],
         [Paragraph("<b>Status:</b>", body_center_style), Paragraph(run.status, body_center_style), Paragraph("<b>Rating:</b>", body_center_style), Paragraph(overall_evaluate, body_center_style)],
