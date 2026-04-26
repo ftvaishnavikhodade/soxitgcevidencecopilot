@@ -379,7 +379,10 @@ def analyze_evidence(run_id: int, control: dict, files: list) -> dict:
     else:
         conc_text = "Testing procedures executed without material exception based on the evidence provided. The evaluated sample appears generally supported."
 
-    workpaper = f"""**Audit Procedure Performed**
+    workpaper = f"""**Key Assertion Being Evaluated**
+The objective of this testing sequence is to confirm the operating effectiveness of the control regarding validation of approvals and demographic constraints prior to access provisioning.
+
+**Audit Procedure Performed**
 {ctrl_proc}
 
 **Scope and Basis of Evaluation**
