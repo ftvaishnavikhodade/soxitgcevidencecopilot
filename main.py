@@ -325,6 +325,96 @@ def export_workpaper_pdf(run_id: int, payload: WorkpaperUpdate, db: Session = De
     Story.append(Paragraph(f"<b>Execution Date:</b> {run.created_at.strftime('%B %d, %Y %H:%M:%S UTC') if run.created_at else 'N/A'}", body_style))
     
     Story.append(Spacer(1, 20))
+    
+    # ------------------ VISUAL SUMMARY CHARTS ------------------
+    try:
+        import json
+        from reportlab.platypus import KeepTogether, Table
+        from reportlab.graphics.shapes import Drawing, String
+        from reportlab.graphics.charts.piecharts import Pie
+
+        checklist_data = json.loads(run.checklist_json) if run.checklist_json else {}
+        rules_data = checklist_data.get("rules", checklist_data) if isinstance(checklist_data, dict) else {}
+        files_data = json.loads(run.summary) if run.summary else []
+        trust_data = checklist_data.get("trust", {}) if isinstance(checklist_data, dict) else {}
+        missing_evidence = trust_data.get("missing_evidence", [])
+
+        # Evidence Coverage
+        count_fully = sum(1 for f in files_data if f.get("mapping_status") == "Fully recognized")
+        count_partially = sum(1 for f in files_data if f.get("mapping_status") == "Partially recognized")
+        count_missing = len(missing_evidence)
+        ev_all = [(count_fully, "Fully Recog.", HexColor('#10B981')), 
+                  (count_partially, "Partially Recog.", HexColor('#F59E0B')), 
+                  (count_missing, "Missing/Omitted", HexColor('#EF4444'))]
+        ev_data = []
+        ev_labels = []
+        ev_colors = []
+        for d, l, c in ev_all:
+            if d > 0:
+                ev_data.append(d)
+                ev_labels.append(f"{l} ({d})")
+                ev_colors.append(c)
+
+        # Testing Outcomes
+        c_pass = 0
+        c_fail = 0
+        c_not_testable = 0
+        c_unclear = 0
+        for k, v in rules_data.items():
+            status = v.get("status") if isinstance(v, dict) else v
+            if status == "pass": c_pass += 1
+            elif status == "fail": c_fail += 1
+            elif status == "not_testable": c_not_testable += 1
+            else: c_unclear += 1
+        test_all = [(c_pass, "Pass", HexColor('#10B981')), 
+                    (c_fail, "Exception", HexColor('#EF4444')), 
+                    (c_not_testable, "Not Testable", HexColor('#94A3B8')), 
+                    (c_unclear, "Unclear", HexColor('#F59E0B'))]
+        test_data = []
+        test_labels = []
+        test_colors = []
+        for d, l, c in test_all:
+            if d > 0:
+                test_data.append(d)
+                test_labels.append(f"{l} ({d})")
+                test_colors.append(c)
+
+        def make_pie(data, labels, colors, title):
+            d = Drawing(200, 140)
+            pc = Pie()
+            pc.x = 40
+            pc.y = 20
+            pc.width = 100
+            pc.height = 100
+            pc.data = list(data)
+            pc.labels = list(labels)
+            pc.sideLabels = 1
+            pc.slices.strokeWidth = 0.5
+            for i, c in enumerate(colors):
+                pc.slices[i].fillColor = c
+            d.add(pc)
+            d.add(String(90, 130, title, textAnchor='middle', fontName='Helvetica-Bold', fontSize=10, fillColor=HexColor('#64748B')))
+            return d
+
+        charts = []
+        if test_data:
+            charts.append(make_pie(test_data, test_labels, test_colors, "Testing Outcomes"))
+        if ev_data:
+            charts.append(make_pie(ev_data, ev_labels, ev_colors, "Evidence Coverage"))
+
+        if charts:
+            Story.append(Paragraph("VISUAL SUMMARY", header_style))
+            Story.append(HRFlowable(width="100%", thickness=1, color=HexColor('#E2E8F0'), spaceBefore=2, spaceAfter=8))
+            if len(charts) == 2:
+                Story.append(KeepTogether([Table([charts], colWidths=[240, 240])]))
+            else:
+                Story.append(KeepTogether(charts))
+            Story.append(Spacer(1, 20))
+
+    except Exception as e:
+        print(f"Error generating charts: {e}")
+    # -----------------------------------------------------------
+
     Story.append(Paragraph("EVALUATION NARRATIVE & WORKPAPER", header_style))
     Story.append(HRFlowable(width="100%", thickness=1, color=HexColor('#F1F5F9'), spaceBefore=4, spaceAfter=12))
     

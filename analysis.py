@@ -321,31 +321,51 @@ def analyze_evidence(run_id: int, control: dict, files: list) -> dict:
         for ex in r.get("exceptions", []):
             all_exceptions.append(ex.get("detail", ""))
 
-    exceptions_str = "\\n- ".join(all_exceptions)
-    if exceptions_str:
-        exceptions_str = "- " + exceptions_str
+    exceptions_log = "\n- ".join(all_exceptions)
+    if exceptions_log:
+        exceptions_log = "- " + exceptions_log
+    else:
+        exceptions_log = "No material exceptions or limitations noted."
 
     ctrl_desc = control.get("description", "N/A")
     ctrl_proc = control.get("test_procedure", "N/A")
     type_label = control_type.replace("_", " ").title()
 
-    workpaper = f"""**Objective**
+    evidence_names = ", ".join([f.get("name", "Unknown File") for f in files_data]) if files_data else "None provided"
+    missing_evidence_list = ", ".join(missing_evidence) if missing_evidence else "None identified"
+
+    testing_performed_lines = []
+    for r_name, r_val in rules.items():
+        status_label = str(r_val.get("status", "Unknown")).upper()
+        testing_performed_lines.append(f"- {r_name.replace('_', ' ').title()}: {status_label}")
+    testing_performed_str = "\n".join(testing_performed_lines)
+
+    workpaper = f"""**Control Objective**
 {ctrl_desc}
 
-**Control Type Detected**: {type_label}
-
-**Procedures Performed**
+**Audit Procedure Performed**
 {ctrl_proc}
 
-Evidence packages analyzed: {len(files_data)} file(s).
-Rules evaluated: {', '.join(rules.keys())}.
+**Evidence Reviewed**
+- Files Analyzed: {evidence_names}
+- Missing Expected Evidence: {missing_evidence_list}
 
-**Conclusion**
-The control is evaluated as **{sufficiency.replace('_', ' ').title()}**.
-Test Confidence: **{confidence}** | Evidence Testability: **{evidence_sufficiency}**
-{"Exceptions noted; follow-up required with control owner." if sufficiency != "likely_sufficient" else ("Test procedures executed without material exception." if confidence == "High" else "Review limited by testability.")}
+**Testing Performed**
+{testing_performed_str}
 
-{"**Exception Details:** \\n" + exceptions_str if exceptions_str else ""}
+**Results Summary**
+- Evaluation: {sufficiency.replace('_', ' ').title()}
+- Test Confidence: {confidence}
+- Evidence Testability: {evidence_sufficiency}
+
+**Exceptions / Limitations**
+{exceptions_log}
+
+**Draft Conclusion**
+{"The procedures were executed with exceptions noted. Follow-up is required." if sufficiency != "likely_sufficient" else ("Testing procedures executed without material exception based on the evidence provided." if confidence == "High" else "Review is limited by evidence testability and omitted artifacts.")}
+
+**Reviewer Notes**
+[Leave your review notes here...]
 """
 
     return {

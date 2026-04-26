@@ -850,14 +850,40 @@ function renderAnalysisResults(run) {
     // EXPLICITLY UNHIDE ALL RESULT SECTIONS
     document.getElementById('ar-trust-container').classList.remove('hidden');
     document.getElementById('ar-checklist-container').classList.remove('hidden');
+    
+    // Hide Workpaper Container and show CTA instead
+    document.getElementById('ar-workpaper-container').classList.add('hidden');
+    
+    if (run.workpaper) {
+        document.getElementById('ar-workpaper-cta-container').classList.remove('hidden');
+        setTimeout(() => {
+            document.getElementById('ar-workpaper-cta-container').scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+        }, 300);
+    } else {
+        document.getElementById('ar-workpaper-cta-container').classList.add('hidden');
+    }
+}
+
+function generateWorkpaperDraft() {
+    document.getElementById('ar-workpaper-cta-container').classList.add('hidden');
     document.getElementById('ar-workpaper-container').classList.remove('hidden');
     
-    // Smooth scroll to workpaper for visibility
-    if (run.workpaper) {
-        setTimeout(() => {
-            document.getElementById('ar-workpaper-container').scrollIntoView({ behavior: 'smooth', block: 'start' });
-        }, 300);
-    }
+    setTimeout(() => {
+        document.getElementById('ar-workpaper-container').scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }, 100);
+}
+
+function copyWorkpaper() {
+    const text = document.getElementById('ar-workpaper').value;
+    if (!text) return;
+    navigator.clipboard.writeText(text).then(() => {
+        const btn = document.getElementById('btn-copy-wp');
+        const oldHtml = btn.innerHTML;
+        btn.innerHTML = '<i class="fas fa-check text-[10px]"></i> Copied!';
+        setTimeout(() => { btn.innerHTML = oldHtml; }, 2000);
+    }).catch(err => {
+        console.error('Failed to copy: ', err);
+    });
 }
 
 async function handleAnalyze() {
