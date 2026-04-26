@@ -394,30 +394,33 @@ def export_workpaper_pdf(run_id: int, payload: WorkpaperUpdate, db: Session = De
 
         def make_pie_with_legend(data, labels, colors, title):
             from reportlab.graphics.charts.legends import Legend
+            from reportlab.graphics.charts.piecharts import Pie3d
             d = Drawing(260, 160)
-            pc = Pie()
-            pc.x = 20
-            pc.y = 20
+            
+            pc = Pie3d()
+            pc.x = 10
+            pc.y = 25
             pc.width = 110
-            pc.height = 110
+            pc.height = 80
             pc.data = list(data)
             pc.slices.strokeWidth = 0.5
+            pc.slices.strokeColor = HexColor('#FFFFFF')
             for i, c in enumerate(colors):
                 pc.slices[i].fillColor = c
             d.add(pc)
             
             leg = Legend()
             leg.x = 140
-            leg.y = 120
-            leg.dy = 14
+            leg.y = 105
+            leg.dy = 16
             leg.fontName = 'Helvetica'
-            leg.fontSize = 8
+            leg.fontSize = 9
             leg.boxAnchor = 'nw'
             leg.colorNamePairs = [(colors[i], f'{labels[i]} ({data[i]})') for i in range(len(data))]
             leg.strokeWidth = 0
             d.add(leg)
             
-            d.add(String(130, 145, title, textAnchor='middle', fontName='Helvetica-Bold', fontSize=10, fillColor=HexColor('#334155')))
+            d.add(String(120, 145, title, textAnchor='middle', fontName='Helvetica-Bold', fontSize=10, fillColor=HexColor('#0F172A')))
             return d
 
         charts = []
@@ -433,11 +436,13 @@ def export_workpaper_pdf(run_id: int, payload: WorkpaperUpdate, db: Session = De
                 Story.append(KeepTogether([Table([charts], colWidths=[260, 260])]))
             else:
                 Story.append(KeepTogether(charts))
-            Story.append(Spacer(1, 24))
 
     except Exception as e:
         print(f"Error generating charts: {e}")
     # -----------------------------------------------------------
+
+    from reportlab.platypus import PageBreak
+    Story.append(PageBreak())
 
     Story.append(Paragraph("EVALUATION NARRATIVE & WORKPAPER", header_style))
     Story.append(HRFlowable(width="100%", thickness=1, color=HexColor('#E2E8F0'), spaceBefore=2, spaceAfter=12))

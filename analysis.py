@@ -356,11 +356,11 @@ def analyze_evidence(run_id: int, control: dict, files: list) -> dict:
 **Audit Procedure Performed**
 {ctrl_proc}
 
-**Evidence Reviewed**
+**Evidence Inventory**
 - Files Analyzed: {evidence_names}
 - Missing Expected Evidence: {missing_evidence_list}
 
-**Testing Performed**
+**Testing Matrix**
 {testing_performed_str}
 
 **Results Summary**
@@ -371,7 +371,7 @@ def analyze_evidence(run_id: int, control: dict, files: list) -> dict:
 **Exceptions / Limitations**
 {exceptions_log}
 
-**Draft Conclusion**
+**Draft Auditor Conclusion**
 {conc_text}
 
 **Reviewer Notes**
