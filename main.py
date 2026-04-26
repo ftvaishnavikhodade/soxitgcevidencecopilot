@@ -304,7 +304,7 @@ def export_workpaper_pdf(run_id: int, payload: WorkpaperUpdate, db: Session = De
     # Custom Styles
     from reportlab.lib.enums import TA_CENTER
     body_textColor = HexColor('#334155')
-    title_style = ParagraphStyle('TitleStyle', parent=styles['Heading1'], fontName='Helvetica-Bold', fontSize=24, textColor=HexColor('#2563EB'), spaceAfter=4)
+    title_style = ParagraphStyle('TitleStyle', parent=styles['Heading1'], fontName='Helvetica-Bold', fontSize=24, textColor=HexColor('#2563EB'), spaceAfter=18)
     subtitle_style = ParagraphStyle('SubTitle', parent=styles['Normal'], fontName='Helvetica', fontSize=11, textColor=HexColor('#64748B'), spaceAfter=24)
     header_style = ParagraphStyle('HeaderStyle', parent=styles['Normal'], fontName='Helvetica-Bold', fontSize=14, textColor=HexColor('#0F172A'), spaceBefore=18, spaceAfter=8)
     body_style = ParagraphStyle('BodyStyle', parent=styles['Normal'], fontName='Helvetica', fontSize=12, leading=18, textColor=body_textColor, spaceAfter=8)
@@ -480,12 +480,18 @@ def export_workpaper_pdf(run_id: int, payload: WorkpaperUpdate, db: Session = De
             charts.append(make_pie_with_legend(ev_data, ev_labels, ev_colors, "Evidence Coverage"))
 
         if charts:
-            Story.append(Paragraph("VISUAL SUMMARY", header_style))
-            Story.append(HRFlowable(width="100%", thickness=1, color=HexColor('#E2E8F0'), spaceBefore=2, spaceAfter=8))
+            v_block = []
+            p_vhead = Paragraph("VISUAL SUMMARY", header_style)
+            p_vhead.keepWithNext = True
+            v_block.append(p_vhead)
+            hr_v = HRFlowable(width="100%", thickness=1, color=HexColor('#E2E8F0'), spaceBefore=2, spaceAfter=12)
+            hr_v.keepWithNext = True
+            v_block.append(hr_v)
             if len(charts) == 2:
-                Story.append(KeepTogether([Table([charts], colWidths=[260, 260])]))
+                v_block.append(Table([charts], colWidths=[260, 260]))
             else:
-                Story.append(KeepTogether(charts))
+                for c in charts: v_block.append(c)
+            Story.append(KeepTogether(v_block))
 
     except Exception as e:
         print(f"Error generating charts: {e}")
@@ -494,8 +500,13 @@ def export_workpaper_pdf(run_id: int, payload: WorkpaperUpdate, db: Session = De
     from reportlab.platypus import PageBreak
     Story.append(PageBreak())
 
-    Story.append(Paragraph("EVALUATION NARRATIVE & WORKPAPER", header_style))
-    Story.append(HRFlowable(width="100%", thickness=1, color=HexColor('#E2E8F0'), spaceBefore=2, spaceAfter=14))
+    p_eval = Paragraph("EVALUATION NARRATIVE & WORKPAPER", header_style)
+    p_eval.keepWithNext = True
+    Story.append(p_eval)
+    
+    hr_eval = HRFlowable(width="100%", thickness=1, color=HexColor('#E2E8F0'), spaceBefore=2, spaceAfter=14)
+    hr_eval.keepWithNext = True
+    Story.append(hr_eval)
     
     # Formatting the workpaper text
     text = payload.workpaper.replace('\r\n', '\n')
@@ -530,7 +541,7 @@ def export_workpaper_pdf(run_id: int, payload: WorkpaperUpdate, db: Session = De
             # End of table check
             if (i + 1 == len(paras)) or not paras[i+1].strip().startswith('|'):
                 num_cols = len(table_data[0]) if table_data else 1
-                t = Table(table_data, colWidths=[468.0 / num_cols] * num_cols)
+                t = Table(table_data, colWidths=[468.0 / num_cols] * num_cols, repeatRows=1)
                 t.setStyle(TableStyle([
                     ('BACKGROUND', (0,0), (-1,0), HexColor('#475569')),
                     ('TEXTCOLOR', (0,0), (-1,0), HexColor('#FFFFFF')),
@@ -551,9 +562,19 @@ def export_workpaper_pdf(run_id: int, payload: WorkpaperUpdate, db: Session = De
         # Convert **text** to clean section headers
         if p_escaped.startswith('**') and p_escaped.endswith('**') and len(p_escaped) > 4:
             clean_head = p_escaped[2:-2]
-            Story.append(Spacer(1, 14))
-            Story.append(Paragraph(clean_head, section_title_style))
-            Story.append(HRFlowable(width="100%", thickness=0.5, color=HexColor('#E2E8F0'), spaceBefore=4, spaceAfter=10))
+            
+            if clean_head in ["Evidence Inventory", "Testing Matrix"]:
+                Story.append(PageBreak())
+            else:
+                Story.append(Spacer(1, 14))
+                
+            p_head = Paragraph(clean_head, section_title_style)
+            p_head.keepWithNext = True
+            Story.append(p_head)
+            
+            hr = HRFlowable(width="100%", thickness=0.5, color=HexColor('#E2E8F0'), spaceBefore=4, spaceAfter=10)
+            hr.keepWithNext = True
+            Story.append(hr)
             continue
             
         p_formatted = re.sub(r'\*\*(.*?)\*\*', r'<b>\1</b>', p_escaped)
