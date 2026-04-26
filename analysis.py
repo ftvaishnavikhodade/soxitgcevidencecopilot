@@ -379,10 +379,7 @@ def analyze_evidence(run_id: int, control: dict, files: list) -> dict:
     else:
         conc_text = "Testing procedures executed without material exception based on the evidence provided. The evaluated sample appears generally supported."
 
-    workpaper = f"""**Control Objective**
-{ctrl_desc}
-
-**Audit Procedure Performed**
+    workpaper = f"""**Audit Procedure Performed**
 {ctrl_proc}
 
 **Scope and Basis of Evaluation**

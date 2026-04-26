@@ -302,11 +302,13 @@ def export_workpaper_pdf(run_id: int, payload: WorkpaperUpdate, db: Session = De
     styles = getSampleStyleSheet()
     
     # Custom Styles
+    from reportlab.lib.enums import TA_CENTER
     body_textColor = HexColor('#334155')
-    title_style = ParagraphStyle('TitleStyle', parent=styles['Heading1'], fontName='Helvetica-Bold', fontSize=20, textColor=HexColor('#0F172A'), spaceAfter=6)
-    subtitle_style = ParagraphStyle('SubTitle', parent=styles['Normal'], fontName='Helvetica', fontSize=10, textColor=HexColor('#64748B'), spaceAfter=24)
-    header_style = ParagraphStyle('HeaderStyle', parent=styles['Normal'], fontName='Helvetica-Bold', fontSize=12, textColor=HexColor('#0F172A'), spaceBefore=16, spaceAfter=8)
+    title_style = ParagraphStyle('TitleStyle', parent=styles['Heading1'], fontName='Helvetica-Bold', fontSize=22, textColor=HexColor('#0F172A'), spaceAfter=4)
+    subtitle_style = ParagraphStyle('SubTitle', parent=styles['Normal'], fontName='Helvetica', fontSize=10, textColor=HexColor('#64748B'), spaceAfter=20)
+    header_style = ParagraphStyle('HeaderStyle', parent=styles['Normal'], fontName='Helvetica-Bold', fontSize=14, textColor=HexColor('#0F172A'), spaceBefore=14, spaceAfter=4)
     body_style = ParagraphStyle('BodyStyle', parent=styles['Normal'], fontName='Helvetica', fontSize=10, leading=16, textColor=body_textColor, spaceAfter=8)
+    body_center_style = ParagraphStyle('BodyCenter', parent=body_style, alignment=TA_CENTER)
 
     Story = []
     
@@ -320,13 +322,14 @@ def export_workpaper_pdf(run_id: int, payload: WorkpaperUpdate, db: Session = De
     
     exec_date = run.created_at.strftime('%B %d, %Y %H:%M:%S UTC') if run.created_at else 'N/A'
     meta_data = [
-        [Paragraph("<b>Control ID:</b>", body_style), Paragraph(str(control.id), body_style), Paragraph("<b>Run ID:</b>", body_style), Paragraph(str(run.id), body_style)],
-        [Paragraph("<b>Status:</b>", body_style), Paragraph(run.status, body_style), Paragraph("<b>Rating:</b>", body_style), Paragraph(run.rating.replace('_', ' ').title() if run.rating else 'Pending', body_style)],
-        [Paragraph("<b>Execution:</b>", body_style), Paragraph(exec_date, body_style), "", ""]
+        [Paragraph("<b>Control ID:</b>", body_center_style), Paragraph(str(control.id), body_center_style), Paragraph("<b>Run ID:</b>", body_center_style), Paragraph(str(run.id), body_center_style)],
+        [Paragraph("<b>Status:</b>", body_center_style), Paragraph(run.status, body_center_style), Paragraph("<b>Rating:</b>", body_center_style), Paragraph(run.rating.replace('_', ' ').title() if run.rating else 'Pending', body_center_style)],
+        [Paragraph("<b>Execution:</b>", body_center_style), Paragraph(exec_date, body_center_style), "", ""]
     ]
     t_meta = Table(meta_data, colWidths=[80, 160, 60, 168])
     t_meta.setStyle(TableStyle([
-        ('VALIGN', (0,0), (-1,-1), 'TOP'),
+        ('ALIGN', (0,0), (-1,-1), 'CENTER'),
+        ('VALIGN', (0,0), (-1,-1), 'MIDDLE'),
         ('BOTTOMPADDING', (0,0), (-1,-1), 8),
         ('TOPPADDING', (0,0), (-1,-1), 8),
         ('INNERGRID', (0,0), (-1,-1), 0.5, HexColor('#E2E8F0')),
@@ -483,9 +486,9 @@ def export_workpaper_pdf(run_id: int, payload: WorkpaperUpdate, db: Session = De
             row_paras = []
             for col in cols:
                 if len(table_data) == 0:
-                    row_paras.append(Paragraph(f"<b>{col}</b>", ParagraphStyle('TH', parent=body_style, textColor=HexColor('#FFFFFF'), fontSize=9)))
+                    row_paras.append(Paragraph(f"<b>{col}</b>", ParagraphStyle('TH', parent=body_style, alignment=TA_CENTER, textColor=HexColor('#FFFFFF'), fontSize=9)))
                 else:
-                    row_paras.append(Paragraph(col, ParagraphStyle('TD', parent=body_style, fontSize=9)))
+                    row_paras.append(Paragraph(col, ParagraphStyle('TD', parent=body_style, alignment=TA_CENTER, fontSize=9)))
             table_data.append(row_paras)
             
             # End of table check
@@ -495,8 +498,8 @@ def export_workpaper_pdf(run_id: int, payload: WorkpaperUpdate, db: Session = De
                 t.setStyle(TableStyle([
                     ('BACKGROUND', (0,0), (-1,0), HexColor('#475569')),
                     ('TEXTCOLOR', (0,0), (-1,0), HexColor('#FFFFFF')),
-                    ('ALIGN', (0,0), (-1,-1), 'LEFT'),
-                    ('VALIGN', (0,0), (-1,-1), 'TOP'),
+                    ('ALIGN', (0,0), (-1,-1), 'CENTER'),
+                    ('VALIGN', (0,0), (-1,-1), 'MIDDLE'),
                     ('INNERGRID', (0,0), (-1,-1), 0.5, HexColor('#E2E8F0')),
                     ('BOX', (0,0), (-1,-1), 0.5, HexColor('#94A3B8')),
                     ('BOTTOMPADDING', (0,0), (-1,-1), 8),
@@ -513,9 +516,9 @@ def export_workpaper_pdf(run_id: int, payload: WorkpaperUpdate, db: Session = De
         if p_escaped.startswith('**') and p_escaped.endswith('**') and len(p_escaped) > 4:
             clean_head = p_escaped[2:-2]
             p_formatted = f"<font color='#0F172A'><b>{clean_head}</b></font>"
-            Story.append(Spacer(1, 10))
+            Story.append(Spacer(1, 8))
             Story.append(Paragraph(p_formatted, body_style))
-            Story.append(HRFlowable(width="100%", thickness=0.5, color=HexColor('#F1F5F9'), spaceBefore=2, spaceAfter=8))
+            Story.append(HRFlowable(width="100%", thickness=0.5, color=HexColor('#F1F5F9'), spaceBefore=2, spaceAfter=4))
             continue
             
         p_formatted = re.sub(r'\*\*(.*?)\*\*', r'<b>\1</b>', p_escaped)
