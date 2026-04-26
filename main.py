@@ -337,11 +337,9 @@ def export_workpaper_pdf(run_id: int, payload: WorkpaperUpdate, db: Session = De
     import dateutil.tz
     ct_now = datetime.datetime.now(dateutil.tz.gettz('America/Chicago'))
     
-    # Strip seconds to ensure perfect one-line horizontal wrapping across standard resolutions
-    exec_date = ct_now.strftime('%B %#d, %Y %I:%M %p %Z').replace(" 0", " ") if '%' in ct_now.strftime('%#d') else ct_now.strftime('%B %-d, %Y %I:%M %p %Z')
-    # Fallback to standard %d if zero-pad stripping failed (Windows/Linux handling)
-    if '%' in exec_date: 
-        exec_date = ct_now.strftime('%B %d, %Y %I:%M %p %Z').replace(" 0", " ")
+    # Fully platform-independent time format to avoid `ValueError` on %-d or %#d
+    clean_hour = ct_now.strftime('%I').lstrip('0') or '12'
+    exec_date = f"{ct_now.strftime('%B')} {ct_now.day}, {ct_now.strftime('%Y')} {clean_hour}:{ct_now.strftime('%M %p %Z')}"
     exec_style = ParagraphStyle('ExecStyle', parent=body_center_style, fontSize=11)
     
     meta_data = [
