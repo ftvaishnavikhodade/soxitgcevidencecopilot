@@ -321,11 +321,23 @@ def export_workpaper_pdf(run_id: int, payload: WorkpaperUpdate, db: Session = De
     # Details layout via Table for better alignment
     from reportlab.platypus import Table, TableStyle
     
+    import json
+    checklist_data = json.loads(run.checklist_json) if run.checklist_json else {}
+    rules_data = checklist_data.get("rules", checklist_data) if isinstance(checklist_data, dict) else {}
+    files_data = json.loads(run.summary) if run.summary else []
+    trust_data = checklist_data.get("trust", {}) if isinstance(checklist_data, dict) else {}
+    missing_evidence = trust_data.get("missing_evidence", [])
+    
+    control_type = checklist_data.get("control_type", "generic").replace("_", " ").title()
+    overall_evaluate = run.rating.replace('_', ' ').title() if run.rating else 'Pending'
+    sufficiency = trust_data.get("evidence_sufficiency", "Unknown").replace("_", " ").title()
+    rev_needs = "Yes (Action Required)" if "Insufficient" in overall_evaluate or "Unclear" in overall_evaluate else "No (Routine)"
+
     exec_date = run.created_at.strftime('%B %d, %Y %H:%M:%S UTC') if run.created_at else 'N/A'
     meta_data = [
         [Paragraph("<b>Control ID:</b>", body_center_style), Paragraph(str(control.id), body_center_style), Paragraph("<b>Run ID:</b>", body_center_style), Paragraph(str(run.id), body_center_style)],
-        [Paragraph("<b>Status:</b>", body_center_style), Paragraph(run.status, body_center_style), Paragraph("<b>Rating:</b>", body_center_style), Paragraph(run.rating.replace('_', ' ').title() if run.rating else 'Pending', body_center_style)],
-        [Paragraph("<b>Execution:</b>", body_center_style), Paragraph(exec_date, body_center_style), "", ""]
+        [Paragraph("<b>Status:</b>", body_center_style), Paragraph(run.status, body_center_style), Paragraph("<b>Rating:</b>", body_center_style), Paragraph(overall_evaluate, body_center_style)],
+        [Paragraph("<b>Execution:</b>", body_center_style), Paragraph(exec_date, body_center_style), Paragraph("<b>Purpose:</b>", body_center_style), Paragraph("Draft for Review", body_center_style)]
     ]
     t_meta = Table(meta_data, colWidths=[80, 160, 60, 168])
     t_meta.setStyle(TableStyle([
@@ -340,13 +352,14 @@ def export_workpaper_pdf(run_id: int, payload: WorkpaperUpdate, db: Session = De
     Story.append(Paragraph("EVALUATION METADATA", header_style))
     Story.append(t_meta)
     
-    # Control Description centered structural block
+    # Control Snapshot block
     Story.append(Spacer(1, 14))
     desc_label_style = ParagraphStyle('DescLabel', parent=body_center_style, fontName='Helvetica-Bold', fontSize=13, textColor=HexColor('#0F172A'))
+    snap_content = f"<b>Name:</b> Control {control.id} | <b>Detected Type:</b> {control_type}<br/><br/><b>Testing Objective / Description:</b> {control.description}"
     desc_table = Table(
         [
-            [Paragraph("Control Description", desc_label_style)],
-            [Paragraph(control.description, body_center_style)]
+            [Paragraph("Control Snapshot", desc_label_style)],
+            [Paragraph(snap_content, body_center_style)]
         ], 
         colWidths=[468]
     )
@@ -360,20 +373,34 @@ def export_workpaper_pdf(run_id: int, payload: WorkpaperUpdate, db: Session = De
         ('INNERGRID', (0,0), (-1,-1), 0.5, HexColor('#E2E8F0')),
     ]))
     Story.append(desc_table)
+    
+    # Executive Summary Box
+    Story.append(Spacer(1, 14))
+    exec_content = f"<b>Overall Evaluation:</b> {overall_evaluate}<br/><b>Evidence Testability:</b> {sufficiency}<br/><b>Reviewer Attention Recommended:</b> {rev_needs}"
+    exec_table = Table(
+        [
+            [Paragraph("Executive Readout", desc_label_style)],
+            [Paragraph(exec_content, body_center_style)]
+        ], 
+        colWidths=[468]
+    )
+    exec_table.setStyle(TableStyle([
+        ('ALIGN', (0,0), (-1,-1), 'CENTER'),
+        ('VALIGN', (0,0), (-1,-1), 'MIDDLE'),
+        ('BOTTOMPADDING', (0,0), (-1,-1), 10),
+        ('TOPPADDING', (0,0), (-1,-1), 10),
+        ('BACKGROUND', (0,0), (-1,0), HexColor('#F1F5F9')),
+        ('BOX', (0,0), (-1,-1), 0.5, HexColor('#94A3B8')),
+        ('INNERGRID', (0,0), (-1,-1), 0.5, HexColor('#CBD5E1')),
+    ]))
+    Story.append(exec_table)
     Story.append(Spacer(1, 24))
     
     # ------------------ VISUAL SUMMARY CHARTS ------------------
     try:
-        import json
         from reportlab.platypus import KeepTogether, Table
         from reportlab.graphics.shapes import Drawing, String
         from reportlab.graphics.charts.piecharts import Pie
-
-        checklist_data = json.loads(run.checklist_json) if run.checklist_json else {}
-        rules_data = checklist_data.get("rules", checklist_data) if isinstance(checklist_data, dict) else {}
-        files_data = json.loads(run.summary) if run.summary else []
-        trust_data = checklist_data.get("trust", {}) if isinstance(checklist_data, dict) else {}
-        missing_evidence = trust_data.get("missing_evidence", [])
 
         # Evidence Coverage
         count_fully = sum(1 for f in files_data if f.get("mapping_status") == "Fully recognized")

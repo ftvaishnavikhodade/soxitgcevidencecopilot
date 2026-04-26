@@ -337,49 +337,55 @@ def analyze_evidence(run_id: int, control: dict, files: list) -> dict:
         scope_basis += " Due to omitted expected evidence, complete testability was restricted."
 
     # Build Evidence Inventory Table
-    evidence_inventory_lines = ["| File Name | Detected Type | Recognition | Supporting Role |", "|---|---|---|---|"]
+    evidence_inventory_lines = ["| File Name | Detected Evidence Type | Recognition Status | Used in Testing | Supported Attribute / Role | Notes |", "|---|---|---|---|---|---|"]
     if files_data:
         for f in files_data:
-            fname = f.get("name", "Unknown File").replace("|", "-")
+            fname = f.get("name", "Unknown").replace("|", "-")
             det_type = f.get("recognized_type", "Unrecognized").replace("|", "-")
             rec = f.get("mapping_status", "Not Recognized").replace("|", "-")
+            used = "Yes" if "Recognized" in rec else "No"
             roles_sup = ", ".join(f.get("mapped_columns", [])) if f.get("mapped_columns") else "N/A"
             roles_sup = roles_sup.replace("|", "-")
-            evidence_inventory_lines.append(f"| {fname} | {det_type} | {rec} | {roles_sup} |")
+            notes = "Review required" if used == "No" else "Auto-processed"
+            evidence_inventory_lines.append(f"| {fname} | {det_type} | {rec} | {used} | {roles_sup} | {notes} |")
     else:
         evidence_inventory_lines = ["No files provided for analysis."]
     evidence_inventory_str = "\n".join(evidence_inventory_lines)
 
     # Build Testing Matrix Table
-    testing_matrix_lines = ["| Test Attribute | Result | Basis / Rationale | Review Needed |", "|---|---|---|---|"]
+    testing_matrix_lines = ["| Test Attribute | Result | Basis for Result | Evidence Referenced | Reviewer Attention Needed |", "|---|---|---|---|---|"]
     for r_name, r_val in rules.items():
         attr_label = r_name.replace("_", " ").title().replace("|", "-")
         status_label = str(r_val.get("status", "Unknown")).upper().replace("|", "-")
         reason = r_val.get("reason", "N/A").replace("|", "-").replace("\n", " ").strip()
         rev_req = "Yes" if status_label in ["FAIL", "UNCLEAR", "NOT_TESTABLE"] else "No"
-        testing_matrix_lines.append(f"| {attr_label} | {status_label} | {reason} | {rev_req} |")
+        ev_ref = "See Evid. Inv." if status_label != "NOT_TESTABLE" else "N/A"
+        testing_matrix_lines.append(f"| {attr_label} | {status_label} | {reason} | {ev_ref} | {rev_req} |")
     testing_matrix_str = "\n".join(testing_matrix_lines)
 
-    missing_evidence_list = "\n- ".join(missing_evidence) if missing_evidence else "All expected standard evidence types appear present."
-    if missing_evidence: missing_evidence_list = "- " + missing_evidence_list
+    if missing_evidence:
+        missing_evidence_list = "The following expected evidence types were not provided:\n" + "\n".join(["- " + m for m in missing_evidence]) + "\n\nImpact on Testability: Test sections relying on these documents were limited or marked as not testable."
+    else:
+        missing_evidence_list = "All expected standard evidence types appear present. No direct gaps expected."
 
-    exceptions_list = "\n- ".join(all_exceptions) if all_exceptions else "No confirmed exceptions identified."
-    if all_exceptions: exceptions_list = "- " + exceptions_list
+    exceptions_list = "\n".join(["- " + e for e in all_exceptions]) if all_exceptions else "No confirmed exceptions identified."
+    limitations_list = "\n".join(["- " + u for u in untestable_rules]) if untestable_rules else "No major testing limitations noted."
 
-    limitations_list = "\n- ".join(untestable_rules) if untestable_rules else "No major testing limitations noted."
-    if untestable_rules: limitations_list = "- " + limitations_list
-
-    # Draft Conclusion formatting
+    # Draft Conclusion
     if all_exceptions:
-        conc_text = "The procedures were executed with exceptions noted. The control appears to have failed certain attribute tests, requiring immediate follow-up."
+        conc_text = "The procedures were executed with exceptions noted. The control failed certain attribute tests, indicating deviations from expected design. The control does not appear entirely supported and demands attention."
+        recommendation = "Immediate Action Required"
     elif sufficiency != "likely_sufficient" and missing_evidence:
         conc_text = "Unable to reach a confident conclusion. Testing was severely limited due to missing or insufficient evidence. The control is partially unsupported."
+        recommendation = "Required (Provide Missing Evidence)"
     elif sufficiency == "unclear":
         conc_text = "Review is limited by evidence testability. Partial or unclear evidence prevented a complete evaluation of the control's design and operating effectiveness."
+        recommendation = "Suggested (Manual Override/Review)"
     else:
         conc_text = "Testing procedures executed without material exception based on the evidence provided. The evaluated sample appears generally supported."
+        recommendation = "None (Routine Workpaper Sign-off)"
 
-    workpaper = f"""**Key Assertion Being Evaluated**
+    workpaper = f"""**Testing Objective**
 The objective of this testing sequence is to confirm the operating effectiveness of the control regarding validation of approvals and demographic constraints prior to access provisioning.
 
 **Audit Procedure Performed**
@@ -394,7 +400,7 @@ The objective of this testing sequence is to confirm the operating effectiveness
 **Testing Matrix**
 {testing_matrix_str}
 
-**Expected Evidence Gaps**
+**Missing Evidence / Expected Evidence Gaps**
 {missing_evidence_list}
 
 **Testing Limitations**
@@ -406,15 +412,17 @@ The objective of this testing sequence is to confirm the operating effectiveness
 **Results Summary**
 - Overall Evaluation: {sufficiency.replace('_', ' ').title()}
 - Test Confidence Level: {confidence}
-- Evidence Testability Index: {evidence_sufficiency}
+- Evidence Testability / Sufficiency: {evidence_sufficiency}
+- Follow-up Recommendation: {recommendation}
 
 **Draft Auditor Conclusion**
 {conc_text}
 
 **Reviewer Section**
 - Reviewer Notes: 
+- Reviewer Conclusion: 
 - Additional Follow-up Required: 
-- Final Sign-off: 
+- Final Sign-off Status: 
 """
 
     return {
