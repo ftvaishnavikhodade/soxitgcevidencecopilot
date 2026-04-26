@@ -131,17 +131,17 @@ def _classify_pdf(text_preview, filename_lower):
     if any(kw in preview for kw in ["org chart", "organization chart", "reporting structure"]):
         return "Org Chart / Role Context (PDF)", "Partially recognized"
 
-    # 3. Approval evidence
-    if any(kw in fn for kw in ["approval", "authorized", "authorized_by"]):
-        return "Approval Evidence (PDF)", "Fully recognized"
-    if any(kw in preview for kw in ["approv", "authorized", "sign-off"]):
-        return "Approval Evidence (PDF)", "Fully recognized"
+    # 3. Access request ticket (Check before approval because tickets often contain the word 'approval')
+    if any(kw in fn for kw in ["request", "ticket", "jira", "snow", "req-", "req#"]):
+        return "Access Request Ticket (PDF)", "Fully recognized"
+    if any(kw in preview for kw in ["ticket id", "request type", "service desk"]):
+        return "Access Request Ticket (PDF)", "Partially recognized"
 
-    # 4. Access request ticket
-    if any(kw in fn for kw in ["request", "ticket", "req-", "req#"]):
-        return "Access Request Ticket (PDF)", "Fully recognized"
-    if any(kw in preview for kw in ["request", "ticket", "req-", "req#", "service desk"]):
-        return "Access Request Ticket (PDF)", "Fully recognized"
+    # 4. Approval evidence
+    if any(kw in fn for kw in ["approval", "authorized", "sign-off"]):
+        return "Approval Record (PDF)", "Fully recognized"
+    if any(kw in preview for kw in ["approved by", "authorization signature", "authorized by", "manager approval"]):
+        return "Approval Record (PDF)", "Fully recognized"
 
     # 5. Terminations Listing (Added for Deprovisioning)
     if any(kw in fn for kw in ["terminated", "leaver", "separation", "exit", "offboard"]):
@@ -344,9 +344,16 @@ def analyze_evidence(run_id: int, control: dict, files: list) -> dict:
             det_type = f.get("recognized_type", "Unrecognized").replace("|", "-")
             rec = f.get("mapping_status", "Not Recognized").replace("|", "-")
             used = "Yes" if "Recognized" in rec else "No"
-            roles_sup = ", ".join(f.get("mapped_columns", [])) if f.get("mapped_columns") else "N/A"
-            roles_sup = roles_sup.replace("|", "-")
-            notes = "Review required" if used == "No" else "Auto-processed"
+            roles_sup = ", ".join(f.get("mapped_columns", [])) if f.get("mapped_columns") else ""
+            if not roles_sup:
+                if "Request" in det_type: roles_sup = "Initiation Support"
+                elif "Approval" in det_type: roles_sup = "Authorization Support"
+                elif "Listing" in det_type: roles_sup = "Provisioned State Support"
+                elif "Org Chart" in det_type: roles_sup = "Context / Supervisor Support"
+                elif "Terminations" in det_type: roles_sup = "Removal Event Support"
+                else: roles_sup = "General Context"
+            
+            notes = "Review Required" if used == "No" else "Auto-processed"
             evidence_inventory_lines.append(f"| {fname} | {det_type} | {rec} | {used} | {roles_sup} | {notes} |")
     else:
         evidence_inventory_lines = ["No files provided for analysis."]
@@ -376,10 +383,10 @@ def analyze_evidence(run_id: int, control: dict, files: list) -> dict:
         conc_text = "The procedures were executed with exceptions noted. The control failed certain attribute tests, indicating deviations from expected design. The control does not appear entirely supported and demands attention."
         recommendation = "Immediate Action Required"
     elif sufficiency != "likely_sufficient" and missing_evidence:
-        conc_text = "Unable to reach a confident conclusion. Testing was severely limited due to missing or insufficient evidence. The control is partially unsupported."
+        conc_text = "No confirmed exceptions were identified directly from the evidence reviewed; however, missing or limited evidence restricted the ability to reach a fully supported conclusion. The control is partially unsupported."
         recommendation = "Required (Provide Missing Evidence)"
     elif sufficiency == "unclear":
-        conc_text = "Review is limited by evidence testability. Partial or unclear evidence prevented a complete evaluation of the control's design and operating effectiveness."
+        conc_text = "No confirmed exceptions were identified, but review is limited by restricted evidence testability. Partial or unclear evidence prevented a complete evaluation of the control's design and operating effectiveness."
         recommendation = "Suggested (Manual Override/Review)"
     else:
         conc_text = "Testing procedures executed without material exception based on the evidence provided. The evaluated sample appears generally supported."
@@ -419,9 +426,12 @@ The objective of this testing sequence is to confirm the operating effectiveness
 {conc_text}
 
 **Reviewer Section**
+- Reviewer Name: 
+- Review Date: 
 - Reviewer Notes: 
 - Reviewer Conclusion: 
 - Additional Follow-up Required: 
+- Follow-up Owner / Due Date: 
 - Final Sign-off Status: 
 """
 
@@ -510,11 +520,10 @@ def _build_provisioning_rules(
                         })
     elif has_pdf:
         rules["request_documented"]["status"] = "pass"
-        rules["request_documented"]["reason"] = "PDF ticket(s) supplied as request documentation."
+        rules["request_documented"]["reason"] = "Request initiation supported by evaluated Ticket/PDF evidence."
     else:
         rules["request_documented"]["status"] = "not_testable"
-        rules["request_documented"]["reason"] = "No access request evidence uploaded."
-        untestable_rules.append("Request documentation cannot be verified without request log or ticket.")
+        rules["request_documented"]["reason"] = "No access request log or matching ticketing evidence uploaded."
 
     # --- Evaluate: Approvals Present ---
     if has_approval_log or has_request_log:
@@ -559,14 +568,14 @@ def _build_provisioning_rules(
         rules["access_granted_matches"]["status"] = "pass"
         rules["access_granted_matches"]["reason"] = "Access listing uploaded alongside request evidence. Cross-reference available."
     elif has_any_listing:
-        rules["access_granted_matches"]["status"] = "pass"
-        rules["access_granted_matches"]["reason"] = "Access listing provided; no request log for deep cross-reference."
+        rules["access_granted_matches"]["status"] = "unclear"
+        rules["access_granted_matches"]["reason"] = "Access listing provided, but lack of structured request log limits deep cross-reference."
     elif has_population:
-        rules["access_granted_matches"]["status"] = "pass"
-        rules["access_granted_matches"]["reason"] = "User population listing provided as granted access proxy."
+        rules["access_granted_matches"]["status"] = "unclear"
+        rules["access_granted_matches"]["reason"] = "Population listing provided, but lacks granular request cross-reference mapping."
     else:
         rules["access_granted_matches"]["status"] = "not_testable"
-        rules["access_granted_matches"]["reason"] = "No access listing or population data to verify granted access."
+        rules["access_granted_matches"]["reason"] = "No access listing or population data to verify granted access completeness."
         untestable_rules.append("Granted access verification requires an access listing or user population file.")
 
     return rules

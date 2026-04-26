@@ -339,7 +339,7 @@ def export_workpaper_pdf(run_id: int, payload: WorkpaperUpdate, db: Session = De
         [Paragraph("<b>Status:</b>", body_center_style), Paragraph(run.status, body_center_style), Paragraph("<b>Rating:</b>", body_center_style), Paragraph(overall_evaluate, body_center_style)],
         [Paragraph("<b>Execution:</b>", body_center_style), Paragraph(exec_date, body_center_style), Paragraph("<b>Purpose:</b>", body_center_style), Paragraph("Draft for Review", body_center_style)]
     ]
-    t_meta = Table(meta_data, colWidths=[80, 160, 60, 168])
+    t_meta = Table(meta_data, colWidths=[70, 165, 65, 168])
     t_meta.setStyle(TableStyle([
         ('ALIGN', (0,0), (-1,-1), 'CENTER'),
         ('VALIGN', (0,0), (-1,-1), 'MIDDLE'),
@@ -487,10 +487,42 @@ def export_workpaper_pdf(run_id: int, payload: WorkpaperUpdate, db: Session = De
             hr_v = HRFlowable(width="100%", thickness=1, color=HexColor('#E2E8F0'), spaceBefore=2, spaceAfter=12)
             hr_v.keepWithNext = True
             v_block.append(hr_v)
+            
+            # Key Insights Status Board
+            insights_data = [
+                [Paragraph(f"<b>Exceptions:</b> {c_fail}", body_center_style), Paragraph(f"<b>Missing Evidence:</b> {count_missing}", body_center_style)],
+                [Paragraph(f"<b>Blocked Checks:</b> {c_not_testable}", body_center_style), Paragraph(f"<b>Follow-up:</b> {'Recommended' if rev_needs.startswith('Yes') else 'None'}", body_center_style)]
+            ]
+            t_insights = Table(insights_data, colWidths=[234, 234])
+            t_insights.setStyle(TableStyle([
+                ('ALIGN', (0,0), (-1,-1), 'CENTER'),
+                ('VALIGN', (0,0), (-1,-1), 'MIDDLE'),
+                ('BACKGROUND', (0,0), (-1,-1), HexColor('#F8FAFC')),
+                ('BOX', (0,0), (-1,-1), 0.5, HexColor('#CBD5E1')),
+                ('INNERGRID', (0,0), (-1,-1), 0.5, HexColor('#E2E8F0')),
+                ('BOTTOMPADDING', (0,0), (-1,-1), 8),
+                ('TOPPADDING', (0,0), (-1,-1), 8),
+            ]))
+            v_block.append(t_insights)
+            v_block.append(Spacer(1, 14))
+
             if len(charts) == 2:
                 v_block.append(Table([charts], colWidths=[260, 260]))
             else:
                 for c in charts: v_block.append(c)
+
+            # Interpretation logic
+            interp_text = (
+                f"<b>Interpretation:</b> Testing was partially supportable based on uploaded evidence, but reviewer follow-up is recommended due to evidence gaps." if count_missing > 0 else (
+                f"<b>Interpretation:</b> Testing procedures were blocked by severe evidence gaps." if c_not_testable > 2 else (
+                f"<b>Interpretation:</b> Exceptions were identified during testing, requiring immediate review." if c_fail > 0 else 
+                f"<b>Interpretation:</b> Evaluated evidence fully supported the control assertion with no material exceptions identified."
+                ))
+            )
+            p_interp = Paragraph(interp_text, ParagraphStyle('Interp', parent=body_style, textColor=HexColor('#475569'), fontSize=11, alignment=TA_CENTER))
+            v_block.append(Spacer(1, 10))
+            v_block.append(p_interp)
+
             Story.append(KeepTogether(v_block))
 
     except Exception as e:
