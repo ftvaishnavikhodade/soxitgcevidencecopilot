@@ -340,6 +340,16 @@ def analyze_evidence(run_id: int, control: dict, files: list) -> dict:
         testing_performed_lines.append(f"- {r_name.replace('_', ' ').title()}: {status_label}")
     testing_performed_str = "\n".join(testing_performed_lines)
 
+    # Draft Conclusion formatting
+    if all_exceptions:
+        conc_text = "The procedures were executed with exceptions noted. Follow-up is required."
+    elif sufficiency != "likely_sufficient" and missing_evidence:
+        conc_text = "Unable to reach a confident conclusion due to missing or insufficient evidence."
+    elif sufficiency == "unclear":
+        conc_text = "Review is limited by evidence testability. Partial or unclear evidence prevented a complete evaluation."
+    else:
+        conc_text = "Testing procedures executed without material exception based on the evidence provided."
+
     workpaper = f"""**Control Objective**
 {ctrl_desc}
 
@@ -362,7 +372,7 @@ def analyze_evidence(run_id: int, control: dict, files: list) -> dict:
 {exceptions_log}
 
 **Draft Conclusion**
-{"The procedures were executed with exceptions noted. Follow-up is required." if sufficiency != "likely_sufficient" else ("Testing procedures executed without material exception based on the evidence provided." if confidence == "High" else "Review is limited by evidence testability and omitted artifacts.")}
+{conc_text}
 
 **Reviewer Notes**
 [Leave your review notes here...]
