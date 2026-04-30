@@ -164,6 +164,7 @@ async function loadDashboardRuns() {
         const merged = mergeRunsWithCache(serverRuns);
         saveRunsToCache(merged);
         allRunsGlobal = merged;
+        updateReportsCounter();
         renderDashboardRuns();
     } catch (e) {
         console.error('Dashboard runs failed', e);
@@ -1041,6 +1042,7 @@ function renderReportsTable() {
 
     // Filter for Analyzed runs (Reports)
     let reports = allRunsGlobal.filter(run => run.status === 'Analyzed');
+    updateReportsCounter(reports.length);
 
     // Filter by search query
     if (reportsSearchQuery) {
@@ -1059,53 +1061,85 @@ function renderReportsTable() {
     });
 
     if (reports.length === 0) {
-        tbody.innerHTML = `<tr><td colspan="5" class="px-6 py-16 text-center text-slate-400 font-medium italic">No reports found matching your criteria.</td></tr>`;
+        tbody.innerHTML = `<tr><td colspan="6" class="px-6 py-16 text-center text-slate-400 font-medium italic">No reports found matching your criteria.</td></tr>`;
         return;
     }
 
     tbody.innerHTML = '';
-    reports.forEach(run => {
+    reports.forEach((run, index) => {
         const displayName = run.name || `Run #${run.id}`;
         const timestamp = formatChicagoTimestamp(run.created_at);
         
         let ratingBadge = "bg-slate-100 text-slate-500";
+        let ratingText = run.rating ? run.rating.replace(/_/g, ' ') : 'N/A';
         if (run.rating === "likely_sufficient") ratingBadge = "bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400";
         else if (run.rating === "likely_insufficient") ratingBadge = "bg-rose-100 text-rose-700 dark:bg-rose-900/30 dark:text-rose-400";
         else if (run.rating === "unclear") ratingBadge = "bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400";
 
         const tr = document.createElement('tr');
-        tr.className = "hover:bg-slate-50/50 dark:hover:bg-slate-900/20 transition-colors group";
+        tr.className = `hover:bg-slate-50/80 dark:hover:bg-slate-900/40 transition-colors group ${index % 2 === 0 ? 'bg-white dark:bg-slate-900/20' : 'bg-slate-50/30 dark:bg-slate-800/10'}`;
         tr.innerHTML = `
             <td class="px-6 py-4">
-                <div class="flex flex-col">
-                    <span class="text-sm font-bold text-slate-900 dark:text-white">${displayName}</span>
-                    <span class="text-[10px] text-slate-400 font-mono uppercase tracking-tight">Run ID: ${run.id}</span>
+                <div class="flex items-center gap-3">
+                    <div class="w-8 h-8 rounded-lg bg-brand-50 dark:bg-brand-900/20 flex items-center justify-center text-brand-600 dark:text-brand-400 text-xs font-bold border border-brand-100 dark:border-brand-800/40">
+                        <i class="fas fa-file-lines"></i>
+                    </div>
+                    <div class="flex flex-col min-w-0">
+                        <span class="text-sm font-bold text-slate-900 dark:text-white truncate">${displayName}</span>
+                        <span class="text-[10px] text-slate-400 font-mono tracking-tight">EVALUATION ID: ${run.id}</span>
+                    </div>
                 </div>
             </td>
-            <td class="px-6 py-4 text-sm font-semibold text-slate-600 dark:text-slate-400">
-                #${run.control_id}
+            <td class="px-6 py-4">
+                <div class="flex flex-col">
+                    <span class="text-xs font-bold text-slate-700 dark:text-slate-300">Control #${run.control_id}</span>
+                    <span class="text-[10px] text-slate-400">JML Access Management</span>
+                </div>
             </td>
             <td class="px-6 py-4">
-                <span class="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider ${ratingBadge}">
-                    ${run.rating ? run.rating.replace(/_/g, ' ') : 'N/A'}
+                <div class="flex items-center gap-1.5">
+                    <div class="w-1.5 h-1.5 rounded-full bg-emerald-500"></div>
+                    <span class="text-[10px] font-extrabold text-slate-500 uppercase tracking-widest">Finalized</span>
+                </div>
+            </td>
+            <td class="px-6 py-4">
+                <span class="inline-flex items-center px-2 py-0.5 rounded text-[10px] font-black uppercase tracking-tighter ${ratingBadge}">
+                    ${ratingText}
                 </span>
             </td>
-            <td class="px-6 py-4 text-xs font-medium text-slate-500">
-                ${timestamp}
+            <td class="px-6 py-4">
+                <div class="flex flex-col">
+                    <span class="text-[11px] font-medium text-slate-600 dark:text-slate-400">${timestamp.split(' ').slice(0, 2).join(' ')}</span>
+                    <span class="text-[10px] text-slate-400 opacity-70">${timestamp.split(' ').slice(2).join(' ')}</span>
+                </div>
             </td>
             <td class="px-6 py-4 text-right">
-                <div class="flex items-center justify-end gap-2">
-                    <button onclick="viewReport(${run.control_id}, ${run.id})" class="p-2 text-slate-400 hover:text-brand-600 dark:hover:text-brand-400 transition" title="View Report Workspace">
-                        <i class="fas fa-eye"></i>
+                <div class="flex items-center justify-end gap-1 opacity-40 group-hover:opacity-100 transition-opacity">
+                    <button onclick="viewReport(${run.control_id}, ${run.id})" class="p-2 text-slate-400 hover:text-brand-600 dark:hover:text-brand-400 transition transform hover:scale-110" title="Open in Audit Workspace">
+                        <i class="fas fa-arrow-up-right-from-square"></i>
                     </button>
-                    <button onclick="downloadReport(${run.id}, \`${(run.workpaper || "").replace(/`/g, '\\`').replace(/\$/g, '\\$')}\`)" class="p-2 text-slate-400 hover:text-emerald-600 transition" title="Download PDF">
-                        <i class="fas fa-file-pdf"></i>
+                    <button onclick="downloadReport(${run.id}, \`${(run.workpaper || "").replace(/`/g, '\\`').replace(/\$/g, '\\$')}\`)" class="p-2 text-slate-400 hover:text-emerald-600 transition transform hover:scale-110" title="Export PDF Report">
+                        <i class="fas fa-download"></i>
                     </button>
                 </div>
             </td>
         `;
         tbody.appendChild(tr);
     });
+}
+
+function updateReportsCounter(count) {
+    const counterEl = document.getElementById('reports-nav-count');
+    if (!counterEl) return;
+    
+    const finalCount = count !== undefined ? count : allRunsGlobal.filter(run => run.status === 'Analyzed').length;
+    
+    if (finalCount > 0) {
+        counterEl.innerText = finalCount;
+        counterEl.classList.remove('hidden');
+    } else {
+        counterEl.classList.add('hidden');
+    }
 }
 
 function viewReport(controlId, runId) {
