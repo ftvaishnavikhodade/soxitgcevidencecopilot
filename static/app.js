@@ -2,7 +2,9 @@
 let currentControlId = null;
 let currentRunId = null;
 let currentSortOrder = 'desc'; // 'asc' or 'desc'
+let currentReportsSortOrder = 'desc';
 let allRunsGlobal = [];
+let reportsSearchQuery = '';
 
 // --- localStorage Cache Helpers ---
 const RUNS_CACHE_KEY = 'sox_runs_cache';
@@ -62,6 +64,7 @@ function hideAllViews() {
     document.getElementById('view-dashboard').classList.add('hidden');
     document.getElementById('view-create-control').classList.add('hidden');
     document.getElementById('view-control-detail').classList.add('hidden');
+    document.getElementById('view-reports').classList.add('hidden');
 }
 
 function hideWorkspaces() {
@@ -94,6 +97,25 @@ function showCreateControl() {
     hideAllViews();
     document.getElementById('form-create-control').reset();
     document.getElementById('view-create-control').classList.remove('hidden');
+}
+
+function showReports() {
+    hideAllViews();
+    document.getElementById('view-reports').classList.remove('hidden');
+    
+    const breadcrumb = document.getElementById('top-breadcrumb');
+    if (breadcrumb) {
+        breadcrumb.classList.add('hidden');
+        breadcrumb.classList.remove('flex');
+    }
+    
+    const sidebarTitle = document.getElementById('sidebar-title');
+    if (sidebarTitle) sidebarTitle.innerText = "Global History";
+    
+    const newRunCont = document.getElementById('sidebar-new-run-container');
+    if (newRunCont) newRunCont.classList.add('hidden');
+    
+    loadReports();
 }
 
 // API Interactions & Render Logic - Controls
@@ -977,5 +999,146 @@ async function exportWorkpaperPDF() {
     } catch(e) {
         alert("Error exporting PDF");
         console.error(e);
+    }
+}
+
+// --- Reports Tab Specific Logic ---
+
+async function loadReports() {
+    const tbody = document.getElementById('reports-table-body');
+    if (tbody) tbody.innerHTML = `<tr><td colspan="5" class="px-6 py-12 text-center text-slate-400 text-sm"><i class="fas fa-spinner fa-spin mr-2"></i> Loading report library...</td></tr>`;
+
+    try {
+        const response = await fetch('/api/test_runs/');
+        const serverRuns = await response.json();
+        // Use global runs list or re-merge if needed
+        allRunsGlobal = mergeRunsWithCache(serverRuns);
+        renderReportsTable();
+    } catch (e) {
+        console.error('Failed to load reports', e);
+        allRunsGlobal = getRunsFromCache();
+        renderReportsTable();
+    }
+}
+
+function handleReportsSearch() {
+    reportsSearchQuery = document.getElementById('reports-search').value.toLowerCase().trim();
+    renderReportsTable();
+}
+
+function toggleReportsSort() {
+    currentReportsSortOrder = currentReportsSortOrder === 'desc' ? 'asc' : 'desc';
+    const icon = document.getElementById('reports-sort-icon');
+    if (icon) {
+        icon.className = currentReportsSortOrder === 'asc' ? 'fas fa-sort-amount-up text-brand-500' : 'fas fa-sort-amount-down text-slate-500';
+    }
+    renderReportsTable();
+}
+
+function renderReportsTable() {
+    const tbody = document.getElementById('reports-table-body');
+    if (!tbody) return;
+
+    // Filter for Analyzed runs (Reports)
+    let reports = allRunsGlobal.filter(run => run.status === 'Analyzed');
+
+    // Filter by search query
+    if (reportsSearchQuery) {
+        reports = reports.filter(run => {
+            const name = (run.name || `Run #${run.id}`).toLowerCase();
+            const controlId = String(run.control_id);
+            return name.includes(reportsSearchQuery) || controlId.includes(reportsSearchQuery);
+        });
+    }
+
+    // Sort
+    reports.sort((a, b) => {
+        const dateA = new Date(a.created_at || 0);
+        const dateB = new Date(b.created_at || 0);
+        return currentReportsSortOrder === 'desc' ? dateB - dateA : dateA - dateB;
+    });
+
+    if (reports.length === 0) {
+        tbody.innerHTML = `<tr><td colspan="5" class="px-6 py-16 text-center text-slate-400 font-medium italic">No reports found matching your criteria.</td></tr>`;
+        return;
+    }
+
+    tbody.innerHTML = '';
+    reports.forEach(run => {
+        const displayName = run.name || `Run #${run.id}`;
+        const timestamp = formatChicagoTimestamp(run.created_at);
+        
+        let ratingBadge = "bg-slate-100 text-slate-500";
+        if (run.rating === "likely_sufficient") ratingBadge = "bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400";
+        else if (run.rating === "likely_insufficient") ratingBadge = "bg-rose-100 text-rose-700 dark:bg-rose-900/30 dark:text-rose-400";
+        else if (run.rating === "unclear") ratingBadge = "bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400";
+
+        const tr = document.createElement('tr');
+        tr.className = "hover:bg-slate-50/50 dark:hover:bg-slate-900/20 transition-colors group";
+        tr.innerHTML = `
+            <td class="px-6 py-4">
+                <div class="flex flex-col">
+                    <span class="text-sm font-bold text-slate-900 dark:text-white">${displayName}</span>
+                    <span class="text-[10px] text-slate-400 font-mono uppercase tracking-tight">Run ID: ${run.id}</span>
+                </div>
+            </td>
+            <td class="px-6 py-4 text-sm font-semibold text-slate-600 dark:text-slate-400">
+                #${run.control_id}
+            </td>
+            <td class="px-6 py-4">
+                <span class="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider ${ratingBadge}">
+                    ${run.rating ? run.rating.replace(/_/g, ' ') : 'N/A'}
+                </span>
+            </td>
+            <td class="px-6 py-4 text-xs font-medium text-slate-500">
+                ${timestamp}
+            </td>
+            <td class="px-6 py-4 text-right">
+                <div class="flex items-center justify-end gap-2">
+                    <button onclick="viewReport(${run.control_id}, ${run.id})" class="p-2 text-slate-400 hover:text-brand-600 dark:hover:text-brand-400 transition" title="View Report Workspace">
+                        <i class="fas fa-eye"></i>
+                    </button>
+                    <button onclick="downloadReport(${run.id}, \`${(run.workpaper || "").replace(/`/g, '\\`').replace(/\$/g, '\\$')}\`)" class="p-2 text-slate-400 hover:text-emerald-600 transition" title="Download PDF">
+                        <i class="fas fa-file-pdf"></i>
+                    </button>
+                </div>
+            </td>
+        `;
+        tbody.appendChild(tr);
+    });
+}
+
+function viewReport(controlId, runId) {
+    openControlAndRun(controlId, runId);
+}
+
+async function downloadReport(runId, workpaper) {
+    // Temporarily set currentRunId to use existing export logic if needed
+    const oldRunId = currentRunId;
+    currentRunId = runId;
+    
+    try {
+        const res = await fetch(`/api/test_runs/${runId}/export_pdf`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ workpaper: workpaper })
+        });
+        
+        if (!res.ok) throw new Error("Failed to generate PDF");
+        
+        const blob = await res.blob();
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = `workpaper_run_${runId}.pdf`;
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        URL.revokeObjectURL(url);
+    } catch(e) {
+        alert("Error exporting PDF");
+        console.error(e);
+    } finally {
+        currentRunId = oldRunId;
     }
 }

@@ -186,6 +186,12 @@
                         </div>
                     </div>
                     
+                    <!-- Main Navigation -->
+                    <nav class="hidden md:flex items-center gap-6 ml-8">
+                        <button onclick="showDashboard()" class="text-sm font-semibold text-slate-600 dark:text-slate-300 hover:text-brand-600 dark:hover:text-brand-400 transition">Dashboard</button>
+                        <button onclick="showReports()" class="text-sm font-semibold text-slate-600 dark:text-slate-300 hover:text-brand-600 dark:hover:text-brand-400 transition">Reports</button>
+                    </nav>
+
                     <!-- Breadcrumb -->
                     <div id="top-breadcrumb" class="hidden items-center gap-3 ml-4 pl-4 border-l border-slate-200/60 dark:border-slate-700/60">
                         <button onclick="showDashboard()" class="text-sm font-medium text-slate-400 hover:text-brand-600 dark:hover:text-brand-400 transition">Dashboard</button>
@@ -575,6 +581,49 @@
                                 </div>
                             </div>
 
+                        </div>
+                    </div>
+                </div>
+
+                <!-- REPORTS VIEW -->
+                <div id="view-reports" class="hidden animate-fade-in-up">
+                    <div class="flex flex-col md:flex-row justify-between items-start md:items-center mb-8 gap-4">
+                        <div>
+                            <h2 class="text-2xl font-bold text-slate-900 dark:text-white flex items-center gap-3">
+                                Reports Library
+                                <i class="fas fa-file-invoice text-brand-500 text-xl"></i>
+                            </h2>
+                            <p class="text-sm text-slate-500 mt-1.5">Access and retrieve previously generated audit workpapers.</p>
+                        </div>
+                        <div class="flex items-center gap-3 w-full md:w-auto">
+                            <div class="relative flex-1 md:w-64">
+                                <i class="fas fa-search absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 text-xs"></i>
+                                <input type="text" id="reports-search" placeholder="Search reports..." oninput="handleReportsSearch()" class="w-full pl-9 pr-4 py-2 text-sm bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl outline-none focus:ring-2 focus:ring-brand-500/20 transition">
+                            </div>
+                            <button onclick="toggleReportsSort()" class="p-2 rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 hover:bg-slate-50 dark:hover:bg-slate-800 transition shadow-sm">
+                                <i id="reports-sort-icon" class="fas fa-sort-amount-down text-slate-500"></i>
+                            </button>
+                        </div>
+                    </div>
+
+                    <div class="card overflow-hidden">
+                        <div class="overflow-x-auto">
+                            <table class="w-full text-left">
+                                <thead>
+                                    <tr class="bg-slate-50/50 dark:bg-slate-900/30 text-[10px] uppercase tracking-wider text-slate-400 font-bold border-b border-slate-100 dark:border-slate-800">
+                                        <th class="px-6 py-4">Report / Run Name</th>
+                                        <th class="px-6 py-4">Control ID</th>
+                                        <th class="px-6 py-4">Rating</th>
+                                        <th class="px-6 py-4">Generated Date</th>
+                                        <th class="px-6 py-4 text-right">Actions</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="reports-table-body" class="divide-y divide-slate-100 dark:divide-slate-800/50">
+                                    <tr>
+                                        <td colspan="5" class="px-6 py-12 text-center text-slate-400 text-sm">Loading reports...</td>
+                                    </tr>
+                                </tbody>
+                            </table>
                         </div>
                     </div>
                 </div>
