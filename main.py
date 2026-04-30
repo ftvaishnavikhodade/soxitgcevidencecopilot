@@ -30,6 +30,10 @@ app.mount("/static", StaticFiles(directory="static"), name="static")
 def read_index():
     return FileResponse("static/index.html")
 
+@app.get("/reports")
+def read_reports_route():
+    return FileResponse("static/index.html")
+
 # --- Controls endpoints ---
 @app.post("/api/controls/")
 def create_control(description: str = Form(...), test_procedure: str = Form(...), db: Session = Depends(get_db)):

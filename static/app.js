@@ -57,6 +57,19 @@ function formatChicagoTimestamp(isoString) {
 document.addEventListener('DOMContentLoaded', () => {
     loadControls();
     loadDashboardRuns();
+    
+    // Handle initial routing based on URL
+    if (window.location.pathname === '/reports') {
+        showReports(false); // don't push state on initial load
+    }
+});
+
+window.addEventListener('popstate', (event) => {
+    if (event.state && event.state.view === 'reports') {
+        showReports(false);
+    } else {
+        showDashboard(false);
+    }
 });
 
 // Navigation Helpers
@@ -73,10 +86,11 @@ function hideWorkspaces() {
     document.getElementById('workspace-empty').classList.add('hidden');
 }
 
-function showDashboard() {
+function showDashboard(pushState = true) {
     hideAllViews();
     document.getElementById('view-dashboard').classList.remove('hidden');
     
+    if (pushState) history.pushState({ view: 'dashboard' }, '', '/');
     const breadcrumb = document.getElementById('top-breadcrumb');
     if (breadcrumb) {
         breadcrumb.classList.add('hidden');
@@ -99,10 +113,11 @@ function showCreateControl() {
     document.getElementById('view-create-control').classList.remove('hidden');
 }
 
-function showReports() {
+function showReports(pushState = true) {
     hideAllViews();
     document.getElementById('view-reports').classList.remove('hidden');
     
+    if (pushState) history.pushState({ view: 'reports' }, '', '/reports');
     const breadcrumb = document.getElementById('top-breadcrumb');
     if (breadcrumb) {
         breadcrumb.classList.add('hidden');
