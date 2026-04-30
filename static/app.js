@@ -1076,7 +1076,18 @@ function renderReportsTable() {
     });
 
     if (reports.length === 0) {
-        tbody.innerHTML = `<tr><td colspan="6" class="px-6 py-16 text-center text-slate-400 font-medium italic">No reports found matching your criteria.</td></tr>`;
+        tbody.innerHTML = `
+            <tr>
+                <td colspan="6" class="px-6 py-20 text-center">
+                    <div class="flex flex-col items-center justify-center space-y-3">
+                        <div class="w-16 h-16 bg-slate-50 dark:bg-slate-800/50 rounded-2xl flex items-center justify-center border border-slate-100 dark:border-slate-700/50">
+                            <i class="fas fa-file-invoice text-2xl text-slate-300 dark:text-slate-600"></i>
+                        </div>
+                        <p class="text-slate-500 dark:text-slate-400 font-medium text-sm">No reports generated yet</p>
+                        <p class="text-xs text-slate-400 dark:text-slate-500">Run an evaluation in the Dashboard to generate a report.</p>
+                    </div>
+                </td>
+            </tr>`;
         return;
     }
 
@@ -1112,12 +1123,12 @@ function renderReportsTable() {
                 </div>
             </td>
             <td class="px-6 py-4">
-                <div class="flex items-center gap-1.5">
+                <div class="flex items-center justify-center gap-1.5">
                     <div class="w-1.5 h-1.5 rounded-full bg-emerald-500"></div>
                     <span class="text-[10px] font-extrabold text-slate-500 uppercase tracking-widest">Finalized</span>
                 </div>
             </td>
-            <td class="px-6 py-4">
+            <td class="px-6 py-4 text-center">
                 <span class="inline-flex items-center px-2 py-0.5 rounded text-[10px] font-black uppercase tracking-tighter ${ratingBadge}">
                     ${ratingText}
                 </span>
@@ -1129,12 +1140,12 @@ function renderReportsTable() {
                 </div>
             </td>
             <td class="px-6 py-4 text-right">
-                <div class="flex items-center justify-end gap-1 opacity-40 group-hover:opacity-100 transition-opacity">
-                    <button onclick="viewReport(${run.control_id}, ${run.id})" class="p-2 text-slate-400 hover:text-brand-600 dark:hover:text-brand-400 transition transform hover:scale-110" title="Open in Audit Workspace">
-                        <i class="fas fa-arrow-up-right-from-square"></i>
+                <div class="flex items-center justify-end gap-2">
+                    <button onclick="viewReport(${run.control_id}, ${run.id})" class="px-3 py-1.5 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 hover:border-brand-300 dark:hover:border-brand-700 rounded-lg text-xs font-semibold text-slate-600 dark:text-slate-300 hover:text-brand-600 transition shadow-sm flex items-center gap-1.5" title="Open Report">
+                        <i class="fas fa-external-link-alt text-[10px]"></i> View
                     </button>
-                    <button onclick="downloadReport(${run.id}, \`${(run.workpaper || "").replace(/`/g, '\\`').replace(/\$/g, '\\$')}\`)" class="p-2 text-slate-400 hover:text-emerald-600 transition transform hover:scale-110" title="Export PDF Report">
-                        <i class="fas fa-download"></i>
+                    <button onclick="downloadReport(${run.id}, \`${(run.workpaper || "").replace(/`/g, '\\`').replace(/\$/g, '\\$')}\`)" class="px-3 py-1.5 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 hover:border-emerald-300 dark:hover:border-emerald-700 rounded-lg text-xs font-semibold text-slate-600 dark:text-slate-300 hover:text-emerald-600 transition shadow-sm flex items-center gap-1.5" title="Download PDF">
+                        <i class="fas fa-download text-[10px]"></i> PDF
                     </button>
                 </div>
             </td>
