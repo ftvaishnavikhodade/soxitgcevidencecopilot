@@ -59,8 +59,11 @@ document.addEventListener('DOMContentLoaded', () => {
     loadDashboardRuns();
     
     // Handle initial routing based on URL
-    if (window.location.pathname === '/reports') {
+    const path = window.location.pathname;
+    if (path === '/reports' || path === '/reports/') {
         showReports(false); // don't push state on initial load
+    } else {
+        showDashboard(false);
     }
 });
 
@@ -105,6 +108,12 @@ function showDashboard(pushState = true) {
     
     loadControls();
     loadDashboardRuns();
+}
+
+function renderActiveView() {
+    if (!document.getElementById('view-reports').classList.contains('hidden')) {
+        renderReportsTable();
+    }
 }
 
 function showCreateControl() {
@@ -181,6 +190,7 @@ async function loadDashboardRuns() {
         allRunsGlobal = merged;
         updateReportsCounter();
         renderDashboardRuns();
+        renderActiveView();
     } catch (e) {
         console.error('Dashboard runs failed', e);
         // Fall back to cache on network/server error
@@ -1022,7 +1032,7 @@ async function exportWorkpaperPDF() {
 
 async function loadReports() {
     const tbody = document.getElementById('reports-table-body');
-    if (tbody) tbody.innerHTML = `<tr><td colspan="5" class="px-6 py-12 text-center text-slate-400 text-sm"><i class="fas fa-spinner fa-spin mr-2"></i> Loading report library...</td></tr>`;
+    if (tbody) tbody.innerHTML = `<tr><td colspan="6" class="px-6 py-12 text-center text-slate-400 text-sm"><i class="fas fa-spinner fa-spin mr-2"></i> Loading report library...</td></tr>`;
 
     try {
         const response = await fetch('/api/test_runs/');
@@ -1030,6 +1040,8 @@ async function loadReports() {
         // Use global runs list or re-merge if needed
         allRunsGlobal = mergeRunsWithCache(serverRuns);
         renderReportsTable();
+        renderSidebarRuns();
+        renderDashboardSummary();
     } catch (e) {
         console.error('Failed to load reports', e);
         allRunsGlobal = getRunsFromCache();
@@ -1105,8 +1117,8 @@ function renderReportsTable() {
         const tr = document.createElement('tr');
         tr.className = `hover:bg-slate-50/80 dark:hover:bg-slate-900/40 transition-colors group ${index % 2 === 0 ? 'bg-white dark:bg-slate-900/20' : 'bg-slate-50/30 dark:bg-slate-800/10'}`;
         tr.innerHTML = `
-            <td class="px-6 py-4">
-                <div class="flex items-center gap-3">
+            <td class="px-6 py-4 text-left">
+                <div class="flex items-center justify-start gap-3">
                     <div class="w-8 h-8 rounded-lg bg-brand-50 dark:bg-brand-900/20 flex items-center justify-center text-brand-600 dark:text-brand-400 text-xs font-bold border border-brand-100 dark:border-brand-800/40">
                         <i class="fas fa-file-lines"></i>
                     </div>
@@ -1116,13 +1128,13 @@ function renderReportsTable() {
                     </div>
                 </div>
             </td>
-            <td class="px-6 py-4">
-                <div class="flex flex-col">
+            <td class="px-6 py-4 text-left">
+                <div class="flex flex-col items-start pl-2">
                     <span class="text-xs font-bold text-slate-700 dark:text-slate-300">Control #${run.control_id}</span>
                     <span class="text-[10px] text-slate-400">JML Access Management</span>
                 </div>
             </td>
-            <td class="px-6 py-4">
+            <td class="px-6 py-4 text-center">
                 <div class="flex items-center justify-center gap-1.5">
                     <div class="w-1.5 h-1.5 rounded-full bg-emerald-500"></div>
                     <span class="text-[10px] font-extrabold text-slate-500 uppercase tracking-widest">Finalized</span>
@@ -1133,8 +1145,8 @@ function renderReportsTable() {
                     ${ratingText}
                 </span>
             </td>
-            <td class="px-6 py-4">
-                <div class="flex flex-col">
+            <td class="px-6 py-4 text-center">
+                <div class="flex flex-col items-center">
                     <span class="text-[11px] font-medium text-slate-600 dark:text-slate-400">${timestamp.split(' ').slice(0, 2).join(' ')}</span>
                     <span class="text-[10px] text-slate-400 opacity-70">${timestamp.split(' ').slice(2).join(' ')}</span>
                 </div>
@@ -1144,7 +1156,7 @@ function renderReportsTable() {
                     <button onclick="viewReport(${run.control_id}, ${run.id})" class="px-3 py-1.5 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 hover:border-brand-300 dark:hover:border-brand-700 rounded-lg text-xs font-semibold text-slate-600 dark:text-slate-300 hover:text-brand-600 transition shadow-sm flex items-center gap-1.5" title="Open Report">
                         <i class="fas fa-external-link-alt text-[10px]"></i> View
                     </button>
-                    <button onclick="downloadReport(${run.id}, \`${(run.workpaper || "").replace(/`/g, '\\`').replace(/\$/g, '\\$')}\`)" class="px-3 py-1.5 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 hover:border-emerald-300 dark:hover:border-emerald-700 rounded-lg text-xs font-semibold text-slate-600 dark:text-slate-300 hover:text-emerald-600 transition shadow-sm flex items-center gap-1.5" title="Download PDF">
+                    <button onclick="downloadReport(${run.id})" class="px-3 py-1.5 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 hover:border-emerald-300 dark:hover:border-emerald-700 rounded-lg text-xs font-semibold text-slate-600 dark:text-slate-300 hover:text-emerald-600 transition shadow-sm flex items-center gap-1.5" title="Download PDF">
                         <i class="fas fa-download text-[10px]"></i> PDF
                     </button>
                 </div>
@@ -1152,6 +1164,7 @@ function renderReportsTable() {
         `;
         tbody.appendChild(tr);
     });
+    console.log(`Rendered ${reports.length} report rows.`);
 }
 
 function updateReportsCounter(count) {
@@ -1172,7 +1185,11 @@ function viewReport(controlId, runId) {
     openControlAndRun(controlId, runId);
 }
 
-async function downloadReport(runId, workpaper) {
+async function downloadReport(runId) {
+    const run = allRunsGlobal.find(r => r.id === runId);
+    if (!run) return;
+    const workpaper = run.workpaper || "";
+    
     // Temporarily set currentRunId to use existing export logic if needed
     const oldRunId = currentRunId;
     currentRunId = runId;
